@@ -37,8 +37,11 @@ def codigostatusdiferente():
     return "<p>Bad request</p>", 400
 
 
+@app.route('/objetoresposta', defaults={'name': None})
 @app.route('/objetoresposta/<name>')
 def objetoresposta(name):
+    if name is None:
+        name = request.args.get("name", "desconhecido")
     response = make_response("<h1>This document carries a cookie!</h1>")
     response.set_cookie("usuario", name)
     return response
