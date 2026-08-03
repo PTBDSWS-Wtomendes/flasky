@@ -6,15 +6,19 @@ app = Flask(__name__)
 def hello_world():
     return '''
     <p>Alterações por meio do PythonAnywhere -> GitHub</p>
+
     <table border="1">
         <tr>
-            <td><b>Professor:</b></td>
-            <td>Professor Fabio Teixeira</td>
+            <td><b>Aluno:</b></td>
+            <td>Wellington Mendes</td>
         </tr>
         <tr>
             <td><b>Prontuário:</b></td>
-            <td>PT23820X</td>
+            <td>PT303772x</td>
         </tr>
+        <tr>
+            <td><b>Disciplina:</b></td>
+            <td>PTBDSWS</td>
     </table>
     '''
 
@@ -25,25 +29,23 @@ def user(name):
 
 @app.route('/contextorequisicao')
 def contextorequisicao():
-    user_agent = request.headers.get('User-Agent')
-    return f'<p>Seu navegador é: {user_agent}</p>'
+    return f'<p>Your browser is {request.headers.get("User-Agent")}</p>'
 
 
 @app.route('/codigostatusdiferente')
 def codigostatusdiferente():
-    return "<h1>Status 201</h1>", 201
+    return "<p>Bad request</p>", 400
 
 
-@app.route('/objetoresposta')
-def objetoresposta():
-    resposta = make_response("<h1>Objeto Response</h1>")
-    resposta.headers["Professor"] = "Fabio Teixeira"
-    return resposta
-
+@app.route('/objetoresposta/<name>')
+def objetoresposta(name):
+    response = make_response("<h1>This document carries a cookie!</h1>")
+    response.set_cookie("usuario", name)
+    return response
 
 @app.route('/redirecionamento')
 def redirecionamento():
-    return redirect('/')
+    return redirect("https://ptb.ifsp.edu.br/")
 
 
 @app.route('/abortar')
