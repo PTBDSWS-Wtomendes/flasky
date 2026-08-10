@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Flasky{% endblock %}
+
+{% block content %}
+<section class="info-card mx-auto error-card">
+  <p class="section-label">Status da resposta</p>
+  <h1 class="display-title">{{ title }}</h1>
+  <p class="lead muted-copy">{{ message }}</p>
+</section>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}User | Flasky{% endblock %}
+
+{% block content %}
+<section class="info-card mx-auto">
+  <p class="section-label">Template com Jinja</p>
+  <h1 class="display-title">Hello, {{ name|capitalize }}!</h1>
+  <p class="lead muted-copy">Esta rota mostra como receber variáveis na view e renderizar o resultado no template.</p>
+</section>
+{% endblock %}

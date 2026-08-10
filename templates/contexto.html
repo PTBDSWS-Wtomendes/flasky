@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Contexto da requisição | Flasky{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Contexto da requisição</h1>
+  <hr>
+  <p>Seu navegador é: {{ user_agent }}</p>
+  <p>O IP do computador remoto é: {{ remote_ip }}</p>
+  <p>O host da aplicação é: {{ host }}</p>
+</div>
+{% endblock %}

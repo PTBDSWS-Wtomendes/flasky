@@ -1,0 +1,141 @@
+:root {
+  --page-bg: #f3efe6;
+  --panel-bg: rgba(255, 255, 255, 0.9);
+  --panel-border: rgba(23, 27, 31, 0.08);
+  --ink: #1d232b;
+  --muted: #606a74;
+  --accent: #2d6e2e;
+  --accent-strong: #1f5320;
+  --nav-bg: #181818;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  font-family: 'Manrope', sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(45, 110, 46, 0.16), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(23, 27, 31, 0.08), transparent 30%),
+    linear-gradient(180deg, #faf8f3 0%, var(--page-bg) 100%);
+}
+
+.app-navbar {
+  background: linear-gradient(180deg, #1b1b1b 0%, #0f0f0f 100%);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.navbar-brand,
+.nav-link {
+  letter-spacing: 0.01em;
+}
+
+.nav-link {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.nav-link:hover,
+.nav-link:focus,
+.nav-link.active {
+  color: #ffffff;
+}
+
+.page-shell {
+  padding: 4rem 0 3rem;
+}
+
+.hero-card,
+.info-card {
+  width: min(100%, 860px);
+  background: var(--panel-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--panel-border);
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(20, 24, 28, 0.12);
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.hero-card {
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.section-label {
+  margin: 0 0 0.75rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.display-title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.content-divider {
+  width: 100%;
+  height: 1px;
+  margin: 1.25rem 0 1.5rem;
+  background: linear-gradient(90deg, rgba(45, 110, 46, 0.55), rgba(45, 110, 46, 0.05));
+}
+
+.time-line {
+  margin: 0.35rem 0;
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+.muted-copy {
+  color: var(--muted);
+}
+
+.student-table th {
+  width: 160px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.student-table td {
+  font-weight: 600;
+}
+
+.code-panel {
+  margin: 1rem 0 0;
+  padding: 1rem 1.15rem;
+  border-radius: 18px;
+  background: #f3f5f7;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  color: #1f2937;
+  font-size: 0.98rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.error-card {
+  border-left: 8px solid var(--accent);
+}
+
+@media (max-width: 767px) {
+  .page-shell {
+    padding-top: 2rem;
+  }
+
+  .hero-card,
+  .info-card {
+    border-radius: 22px;
+  }
+
+  .student-table th {
+    width: 120px;
+  }
+}

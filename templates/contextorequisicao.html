@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Contexto da requisição | Flasky{% endblock %}
+
+{% block content %}
+<section class="info-card mx-auto">
+  <p class="section-label">Contexto da requisição</p>
+  <h1 class="display-title">Seu navegador</h1>
+  <div class="content-divider"></div>
+  <p class="muted-copy">Your browser is:</p>
+  <pre class="code-panel">{{ user_agent }}</pre>
+</section>
+{% endblock %}

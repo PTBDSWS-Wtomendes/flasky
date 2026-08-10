@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Identificação | Flasky{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Identificação</h1>
+  <hr>
+  <table class="table table-bordered table-sm w-auto">
+    <tbody>
+      <tr>
+        <th>Aluno</th>
+        <td>{{ student_name }}</td>
+      </tr>
+      <tr>
+        <th>Prontuário</th>
+        <td>{{ registration }}</td>
+      </tr>
+      <tr>
+        <th>Disciplina</th>
+        <td>{{ discipline }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
