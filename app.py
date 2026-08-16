@@ -1,17 +1,30 @@
-from datetime import datetime
-
-from flask import Flask, abort, make_response, redirect, render_template, request
+from flask import Flask, abort, flash, make_response, redirect, render_template, request, session, url_for
 from flask_moment import Moment
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'chave-forte-altere-em-producao'
 moment = Moment(app)
 application = app
 
 
-@app.route('/')
+class NameForm(FlaskForm):
+    name = StringField('What is your name?', validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    current_time = datetime.utcnow()
-    return render_template('index.html', current_time=current_time)
+    form = NameForm()
+    if form.validate_on_submit():
+        old_name = session.get('name')
+        if old_name is not None and old_name != form.name.data:
+            flash('Looks like you have changed your name!')
+        session['name'] = form.name.data
+        return redirect(url_for('index'))
+    return render_template('index.html', form=form, name=session.get('name'))
 
 
 @app.route('/identificacao')
