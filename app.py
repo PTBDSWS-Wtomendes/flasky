@@ -1,8 +1,9 @@
 from flask import Flask, abort, flash, make_response, redirect, render_template, request, session, url_for
 from flask_moment import Moment
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
+from wtforms import PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'chave-forte-altere-em-producao'
@@ -11,8 +12,17 @@ application = app
 
 
 class NameForm(FlaskForm):
-    name = StringField('What is your name?', validators=[DataRequired()])
+    name = StringField('Informe o seu nome', validators=[DataRequired()])
+    surname = StringField('Informe o seu sobrenome:', validators=[DataRequired()])
+    institution = StringField('Informe a sua Instituição de ensino:', validators=[DataRequired()])
+    discipline = SelectField('Informe a sua disciplina:', choices=[('DSWAF5', 'DSWAF5'), ('PTBDSWS', 'PTBDSWS')], validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+
+class LoginForm(FlaskForm):
+    username = StringField('Usuário ou e-mail')
+    password = PasswordField('Informe a sua senha')
+    submit = SubmitField('Enviar')
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -23,8 +33,17 @@ def index():
         if old_name is not None and old_name != form.name.data:
             flash('Looks like you have changed your name!')
         session['name'] = form.name.data
+        session['surname'] = form.surname.data
+        session['institution'] = form.institution.data
+        session['discipline'] = form.discipline.data
         return redirect(url_for('index'))
-    return render_template('index.html', form=form, name=session.get('name'))
+    return render_template('index.html', form=form, name=session.get('name'), current_time=datetime.now(), remote_ip=request.remote_addr, host=request.host)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    return render_template('login.html', form=form)
 
 
 @app.route('/identificacao')

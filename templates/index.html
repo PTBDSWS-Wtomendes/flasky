@@ -4,16 +4,26 @@
 
 {% block content %}
 <div class="page-heading">
-  <h1>Hello, {% if name %}{{ name }}{% else %}Stranger{% endif %}!</h1>
+  <h1>Olá, {% if name %}{{ name }}{% else %}Estranho{% endif %}!</h1>
+  <p>A sua Instituição de ensino é {{ session.get('institution', 'None') }}</p>
+  <p>Está cursando a disciplina de {{ session.get('discipline', '') }}</p>
+  <div class="request-context">
+    <p>O IP do computador remoto é: {{ remote_ip or 'None' }}</p>
+    <p>O host da aplicação é: {{ host or 'None' }}</p>
+  </div>
   <hr>
 
-  <form method="POST" class="mt-4">
+  <form method="POST" class="home-form">
     {{ form.hidden_tag() }}
-    <div class="mb-3">
-      {{ form.name.label(class="form-label") }}
-      {{ form.name(class="form-control", id="my-text-field") }}
+    {% for field in [form.name, form.surname, form.institution, form.discipline] %}
+    <div class="form-group">
+      {{ field.label }}
+      {{ field(class="form-control") }}
     </div>
+    {% endfor %}
     {{ form.submit(class="btn btn-primary") }}
   </form>
+  <p class="time-line">The local date and time is {{ moment(current_time).format('MMMM D, YYYY h:mm A') }}.</p>
+  <p class="time-line">{{ moment(current_time).fromNow(refresh=True) }}.</p>
 </div>
 {% endblock %}
