@@ -1,3 +1,5 @@
 Flask
 Flask-Moment
 Flask-WTF
+Flask-SQLAlchemy
+Flask-Migrate
