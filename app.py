@@ -5,7 +5,7 @@ from flask_moment import Moment
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
@@ -17,6 +17,7 @@ app.config['SECRET_KEY'] = 'chave-forte-altere-em-producao'
 app.config['SQLALCHEMY_DATABASE_URI'] = \
     'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 moment = Moment(app)
 db = SQLAlchemy(app)
@@ -50,10 +51,7 @@ def make_shell_context():
 
 
 class NameForm(FlaskForm):
-    name = StringField('Informe o seu nome', validators=[DataRequired()])
-    surname = StringField('Informe o seu sobrenome:', validators=[DataRequired()])
-    institution = StringField('Informe a sua Instituição de ensino:', validators=[DataRequired()])
-    discipline = SelectField('Informe a sua disciplina:', choices=[('DSWAF5', 'DSWAF5'), ('PTBDSWS', 'PTBDSWS')], validators=[DataRequired()])
+    name = StringField('What is your name?', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
 
@@ -67,15 +65,26 @@ class LoginForm(FlaskForm):
 def index():
     form = NameForm()
     if form.validate_on_submit():
-        old_name = session.get('name')
-        if old_name is not None and old_name != form.name.data:
-            flash('Looks like you have changed your name!')
+        user = User.query.filter_by(username=form.name.data).first()
+        if user is None:
+            user_role = Role.query.filter_by(name='User').first()
+            user = User(username=form.name.data, role=user_role)
+            db.session.add(user)
+            db.session.commit()
+            session['known'] = False
+        else:
+            session['known'] = True
+        session.permanent = True
         session['name'] = form.name.data
-        session['surname'] = form.surname.data
-        session['institution'] = form.institution.data
-        session['discipline'] = form.discipline.data
         return redirect(url_for('index'))
-    return render_template('index.html', form=form, name=session.get('name'), current_time=datetime.now(), remote_ip=request.remote_addr, host=request.host)
+
+    return render_template(
+        'index.html',
+        form=form,
+        name=session.get('name'),
+        known=session.get('known', False),
+        users=User.query.all()
+    )
 
 
 @app.route('/login', methods=['GET', 'POST'])

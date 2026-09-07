@@ -5,25 +5,41 @@
 {% block content %}
 <div class="page-heading">
   <h1>Olá, {% if name %}{{ name }}{% else %}Estranho{% endif %}!</h1>
-  <p>A sua Instituição de ensino é {{ session.get('institution', 'None') }}</p>
-  <p>Está cursando a disciplina de {{ session.get('discipline', '') }}</p>
-  <div class="request-context">
-    <p>O IP do computador remoto é: {{ remote_ip or 'None' }}</p>
-    <p>O host da aplicação é: {{ host or 'None' }}</p>
-  </div>
-  <hr>
+  {% if not known %}
+  <p>Prazer em conhecê-lo!</p>
+  {% else %}
+  <p>Prazer em vê-lo novamente!</p>
+  {% endif %}
 
-  <form method="POST" class="home-form">
+  <form method="POST" class="home-form my-4">
     {{ form.hidden_tag() }}
-    {% for field in [form.name, form.surname, form.institution, form.discipline] %}
-    <div class="form-group">
-      {{ field.label }}
-      {{ field(class="form-control") }}
+    <div class="form-group mb-3">
+      {{ form.name.label(class="form-label") }}
+      {{ form.name(class="form-control") }}
     </div>
-    {% endfor %}
-    {{ form.submit(class="btn btn-primary") }}
+    {{ form.submit(class="btn btn-light border") }}
   </form>
-  <p class="time-line">The local date and time is {{ moment(current_time).format('MMMM D, YYYY h:mm A') }}.</p>
-  <p class="time-line">{{ moment(current_time).fromNow(refresh=True) }}.</p>
+
+  <h2 class="mt-5 mb-3 fw-normal">Relação de usuários cadastrados</h2>
+  <table class="table align-middle">
+    <thead>
+      <tr>
+        <th scope="col">Nome do usuário</th>
+        <th scope="col">Função</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.username }}</td>
+        <td>{{ u.role.name if u.role else 'User' }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="2" class="text-muted">Nenhum usuário cadastrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}
