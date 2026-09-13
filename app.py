@@ -52,6 +52,11 @@ def make_shell_context():
 
 class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[DataRequired()])
+    role = SelectField(
+        'Role?:',
+        choices=[('Administrator', 'Administrator'), ('Moderator', 'Moderator'), ('User', 'User')],
+        validators=[DataRequired()],
+    )
     submit = SubmitField('Submit')
 
 
@@ -64,11 +69,24 @@ class LoginForm(FlaskForm):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     form = NameForm()
+    role_order = {'Administrator': 0, 'Moderator': 1, 'User': 2}
+    roles = sorted(Role.query.all(), key=lambda role: role_order.get(role.name, 99))
+    existing_role_names = {role.name for role in roles}
+    missing_roles = [
+        Role(name=role_name)
+        for role_name in ('Administrator', 'Moderator', 'User')
+        if role_name not in existing_role_names
+    ]
+    if missing_roles:
+        db.session.add_all(missing_roles)
+        db.session.commit()
+        roles = sorted(Role.query.all(), key=lambda role: role_order.get(role.name, 99))
+
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.name.data).first()
         if user is None:
-            user_role = Role.query.filter_by(name='User').first()
-            user = User(username=form.name.data, role=user_role)
+            selected_role = Role.query.filter_by(name=form.role.data).first()
+            user = User(username=form.name.data, role=selected_role)
             db.session.add(user)
             db.session.commit()
             session['known'] = False
@@ -83,7 +101,10 @@ def index():
         form=form,
         name=session.get('name'),
         known=session.get('known', False),
-        users=User.query.all()
+        users=User.query.order_by(User.id).all(),
+        roles=Role.query.order_by(Role.id).all(),
+        role_count=Role.query.count(),
+        user_count=User.query.count(),
     )
 
 

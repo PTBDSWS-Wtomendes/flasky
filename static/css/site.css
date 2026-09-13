@@ -83,6 +83,29 @@ body {
   vertical-align: middle;
 }
 
+.users-table,
+.roles-table {
+  font-size: 12px;
+}
+
+.users-table th,
+.roles-table th {
+  border-bottom-color: #ccc;
+}
+
+.users-table td,
+.users-table th,
+.roles-table td,
+.roles-table th {
+  border-bottom-color: #ddd;
+  padding: 7px 6px;
+}
+
+.roles-table ol {
+  margin: 0;
+  padding-left: 25px;
+}
+
 @media (max-width: 767px) {
   .page-shell {
     padding-top: 0.5rem;
