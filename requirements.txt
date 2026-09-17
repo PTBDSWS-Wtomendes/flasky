@@ -3,3 +3,5 @@ Flask-Moment
 Flask-WTF
 Flask-SQLAlchemy
 Flask-Migrate
+requests
+python-dotenv

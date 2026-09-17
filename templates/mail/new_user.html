@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="pt-BR">
+  <body>
+    <h1>User Cadastrado no Banco</h1>
+    <p>Um novo usuário foi persistido na aplicação Flasky.</p>
+    <p><strong>Usuário inputado:</strong> {{ user.username }}</p>
+    <p><strong>Função:</strong> {{ user.role.name if user.role else 'User' }}</p>
+    <hr>
+    <p><strong>Matrícula:</strong> {{ registration }}</p>
+    <p><strong>Aluno:</strong> {{ student_name }}</p>
+  </body>
+</html>

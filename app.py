@@ -1,9 +1,11 @@
 import os
 
+import requests
+from dotenv import load_dotenv
 from flask import Flask, abort, flash, make_response, redirect, render_template, request, session, url_for
 from flask_moment import Moment
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, SelectField, StringField, SubmitField
+from wtforms import PasswordField, StringField, SubmitField
 from wtforms.validators import DataRequired
 from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
@@ -11,6 +13,7 @@ from flask_migrate import Migrate
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.env'))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'chave-forte-altere-em-producao'
@@ -18,6 +21,15 @@ app.config['SQLALCHEMY_DATABASE_URI'] = \
     'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+app.config['MAILGUN_API_KEY'] = os.environ.get('MAILGUN_API_KEY', os.environ.get('API_KEY'))
+app.config['MAILGUN_API_URL'] = os.environ.get('MAILGUN_API_URL', os.environ.get('API_URL'))
+app.config['MAILGUN_FROM'] = os.environ.get(
+    'MAILGUN_FROM', os.environ.get('API_FROM', 'mendes.cunha@aluno.ifsp.edu.br')
+)
+app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky] '
+app.config['FLASKY_ADMIN'] = os.environ.get(
+    'FLASKY_ADMIN', 'mendes.cunha@aluno.ifsp.edu.br'
+)
 
 moment = Moment(app)
 db = SQLAlchemy(app)
@@ -52,11 +64,6 @@ def make_shell_context():
 
 class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[DataRequired()])
-    role = SelectField(
-        'Role?:',
-        choices=[('Administrator', 'Administrator'), ('Moderator', 'Moderator'), ('User', 'User')],
-        validators=[DataRequired()],
-    )
     submit = SubmitField('Submit')
 
 
@@ -64,6 +71,34 @@ class LoginForm(FlaskForm):
     username = StringField('Usuário ou e-mail')
     password = PasswordField('Informe a sua senha')
     submit = SubmitField('Enviar')
+
+
+def send_new_user_email(user):
+    recipient = app.config['FLASKY_ADMIN']
+    api_key = app.config['MAILGUN_API_KEY']
+    api_url = app.config['MAILGUN_API_URL']
+    if not recipient or not api_key or not api_url:
+        return False
+
+    html = render_template(
+        'mail/new_user.html',
+        user=user,
+        student_name='Wellington Mendes',
+        registration='PT303772X',
+    )
+    response = requests.post(
+        api_url,
+        auth=('api', api_key),
+        data={
+            'from': app.config['MAILGUN_FROM'],
+            'to': recipient,
+            'subject': app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + 'User Cadastrado no Banco',
+            'html': html,
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    return True
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -85,11 +120,19 @@ def index():
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.name.data).first()
         if user is None:
-            selected_role = Role.query.filter_by(name=form.role.data).first()
+            selected_role = Role.query.filter_by(name='User').first()
             user = User(username=form.name.data, role=selected_role)
             db.session.add(user)
             db.session.commit()
             session['known'] = False
+            try:
+                if send_new_user_email(user):
+                    flash('Cadastro salvo e e-mail enviado ao administrador.')
+                else:
+                    flash('Cadastro salvo. Configure FLASKY_ADMIN para enviar o e-mail.')
+            except Exception:
+                app.logger.exception('Falha ao enviar o e-mail de novo usuário')
+                flash('Cadastro salvo, mas não foi possível enviar o e-mail.')
         else:
             session['known'] = True
         session.permanent = True
@@ -119,7 +162,7 @@ def identificacao():
     return render_template(
         'identificacao.html',
         student_name='Wellington Mendes',
-        registration='PT303772x',
+        registration='PT303772X',
         discipline='PTBDSWS',
     )
 

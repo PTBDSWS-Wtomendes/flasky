@@ -4,72 +4,22 @@
 
 {% block content %}
 <div class="page-heading">
-  <h1>Olá, {% if name %}{{ name }}{% else %}Estranho{% endif %}!</h1>
+  <h1>Hello, {% if name %}{{ name }}{% else %}tom{% endif %}!</h1>
   {% if not known %}
-  <p>Prazer em conhecê-lo!</p>
+  <p>Pleased to meet you!</p>
   {% else %}
-  <p>Prazer em vê-lo novamente!</p>
+  <p>Pleased to see you again!</p>
   {% endif %}
 
-  <form method="POST" class="home-form my-4">
+  <hr>
+
+  <form method="POST" class="home-form">
     {{ form.hidden_tag() }}
     <div class="form-group mb-3">
       {{ form.name.label(class="form-label") }}
       {{ form.name(class="form-control") }}
     </div>
-    <div class="form-group mb-3">
-      {{ form.role.label(class="form-label") }}
-      {{ form.role(class="form-control") }}
-    </div>
     {{ form.submit(class="btn btn-light border") }}
   </form>
-
-  <h2 class="mt-3 mb-1 fw-normal">Relação de usuários cadastrados</h2>
-  <p>Quantidade: {{ user_count }}</p>
-  <table class="table align-middle users-table">
-    <thead>
-      <tr>
-        <th scope="col">Nome do usuário</th>
-        <th scope="col">Função</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for u in users %}
-      <tr>
-        <td>{{ u.username }}</td>
-        <td>{{ u.role.name if u.role else 'User' }}</td>
-      </tr>
-      {% else %}
-      <tr>
-        <td colspan="2" class="text-muted">Nenhum usuário cadastrado.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  <h2 class="mt-4 mb-1 fw-normal">Relação de funções cadastradas</h2>
-  <p>Quantidade: {{ role_count }}</p>
-  <table class="table align-middle roles-table">
-    <thead>
-      <tr>
-        <th scope="col">Funções</th>
-        <th scope="col">Usuários</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for role in roles %}
-      <tr>
-        <td>{{ role.name }}</td>
-        <td>
-          <ol>
-            {% for user in role.users.all() %}
-            <li>{{ user.username }}</li>
-            {% endfor %}
-          </ol>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
 </div>
 {% endblock %}
