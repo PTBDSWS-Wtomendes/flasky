@@ -74,10 +74,14 @@ class LoginForm(FlaskForm):
 
 
 def send_new_user_email(user):
-    recipient = app.config['FLASKY_ADMIN']
+    recipients = [
+        address.strip()
+        for address in app.config['FLASKY_ADMIN'].split(',')
+        if address.strip()
+    ]
     api_key = app.config['MAILGUN_API_KEY']
     api_url = app.config['MAILGUN_API_URL']
-    if not recipient or not api_key or not api_url:
+    if not recipients or not api_key or not api_url:
         return False
 
     html = render_template(
@@ -91,7 +95,7 @@ def send_new_user_email(user):
         auth=('api', api_key),
         data={
             'from': app.config['MAILGUN_FROM'],
-            'to': recipient,
+            'to': recipients,
             'subject': app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + 'User Cadastrado no Banco',
             'html': html,
         },
