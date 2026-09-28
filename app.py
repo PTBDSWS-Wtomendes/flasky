@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from flask import Flask, abort, flash, make_response, redirect, render_template, request, session, url_for
 from flask_moment import Moment
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, SubmitField
+from wtforms import BooleanField, PasswordField, StringField, SubmitField
 from wtforms.validators import DataRequired
 from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
@@ -27,8 +27,9 @@ app.config['MAILGUN_FROM'] = os.environ.get(
     'MAILGUN_FROM', os.environ.get('API_FROM', 'mendes.cunha@aluno.ifsp.edu.br')
 )
 app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky] '
-app.config['FLASKY_ADMIN'] = os.environ.get(
-    'FLASKY_ADMIN', 'mendes.cunha@aluno.ifsp.edu.br'
+app.config['FLASKY_ADMIN'] = 'mendes.cunha@aluno.ifsp.edu.br'
+app.config['FLASKY_OPTIONAL_ADMIN'] = os.environ.get(
+    'FLASKY_OPTIONAL_ADMIN', 'flaskaulasweb@zohomail.com'
 )
 
 moment = Moment(app)
@@ -63,7 +64,10 @@ def make_shell_context():
 
 
 class NameForm(FlaskForm):
-    name = StringField('What is your name?', validators=[DataRequired()])
+    name = StringField('Qual é o seu nome?', validators=[DataRequired()])
+    send_optional_email = BooleanField(
+        'Deseja enviar e-mail para flaskaulasweb@zohomail.com?'
+    )
     submit = SubmitField('Submit')
 
 
@@ -73,12 +77,10 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Enviar')
 
 
-def send_new_user_email(user):
-    recipients = [
-        address.strip()
-        for address in app.config['FLASKY_ADMIN'].split(',')
-        if address.strip()
-    ]
+def send_new_user_email(user, send_optional_email=False):
+    recipients = [app.config['FLASKY_ADMIN']]
+    if send_optional_email:
+        recipients.append(app.config['FLASKY_OPTIONAL_ADMIN'])
     api_key = app.config['MAILGUN_API_KEY']
     api_url = app.config['MAILGUN_API_URL']
     if not recipients or not api_key or not api_url:
@@ -130,10 +132,18 @@ def index():
             db.session.commit()
             session['known'] = False
             try:
-                if send_new_user_email(user):
+                if send_new_user_email(user, form.send_optional_email.data):
                     flash('Cadastro salvo e e-mail enviado ao administrador.')
                 else:
                     flash('Cadastro salvo. Configure FLASKY_ADMIN para enviar o e-mail.')
+            except requests.HTTPError as error:
+                response = error.response
+                app.logger.error(
+                    'Mailgun rejeitou o envio: status=%s resposta=%s',
+                    response.status_code if response else 'desconhecido',
+                    response.text if response else str(error),
+                )
+                flash('Cadastro salvo, mas o Mailgun rejeitou o envio. Consulte o log.')
             except Exception:
                 app.logger.exception('Falha ao enviar o e-mail de novo usuário')
                 flash('Cadastro salvo, mas não foi possível enviar o e-mail.')

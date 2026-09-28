@@ -129,6 +129,10 @@ body {
 .form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 0.35rem; }
 .form-control { border: 1px solid #ccc; border-radius: 4px; height: 28px; min-height: 28px; padding: 4px 10px; font-size: 12px; line-height: 18px; }
 .home-form .form-control { width: 100%; }
+.optional-email { margin: 0 0 0.55rem; font-size: 12px; }
+.optional-email .form-check-input { margin-top: 0.15rem; }
+.optional-email .form-check-label { cursor: pointer; }
+.page-heading h2 { font-size: 24px; font-weight: 400; margin: 0.75rem 0 0.4rem; }
 .home-form .btn { font-size: 12px; line-height: 18px; padding: 4px 10px; }
 .btn-primary { background: #337ab7; border-color: #2e6da4; font-size: 12px; padding: 5px 10px; }
 .time-line { font-size: 12px !important; margin: 1rem 0 0 !important; }
