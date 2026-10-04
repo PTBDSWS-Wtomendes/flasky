@@ -71,6 +71,10 @@ class SentEmail(db.Model):
         return '<SentEmail %r>' % self.subject
 
 
+with app.app_context():
+    SentEmail.__table__.create(db.engine, checkfirst=True)
+
+
 @app.shell_context_processor
 def make_shell_context():
     return dict(db=db, User=User, Role=Role, SentEmail=SentEmail)
@@ -117,13 +121,17 @@ def send_new_user_email(user, send_optional_email=False):
         timeout=15,
     )
     response.raise_for_status()
-    db.session.add(SentEmail(
-        sender=user.username,
-        recipients='\n'.join(recipients),
-        subject=app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + 'User Cadastrado no Banco',
-        body='Novo usuário cadastrado: %s' % user.username,
-    ))
-    db.session.commit()
+    try:
+        db.session.add(SentEmail(
+            sender=user.username,
+            recipients='\n'.join(recipients),
+            subject=app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + 'User Cadastrado no Banco',
+            body='Novo usuário cadastrado: %s' % user.username,
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('E-mail enviado, mas não foi possível registrar o histórico')
     return True
 
 
