@@ -58,9 +58,22 @@ class User(db.Model):
         return '<User %r>' % self.username
 
 
+class SentEmail(db.Model):
+    __tablename__ = 'sent_emails'
+    id = db.Column(db.Integer, primary_key=True)
+    sender = db.Column(db.String(255), nullable=False)
+    recipients = db.Column(db.Text, nullable=False)
+    subject = db.Column(db.String(255), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    sent_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return '<SentEmail %r>' % self.subject
+
+
 @app.shell_context_processor
 def make_shell_context():
-    return dict(db=db, User=User, Role=Role)
+    return dict(db=db, User=User, Role=Role, SentEmail=SentEmail)
 
 
 class NameForm(FlaskForm):
@@ -104,6 +117,13 @@ def send_new_user_email(user, send_optional_email=False):
         timeout=15,
     )
     response.raise_for_status()
+    db.session.add(SentEmail(
+        sender=user.username,
+        recipients='\n'.join(recipients),
+        subject=app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + 'User Cadastrado no Banco',
+        body='Novo usuário cadastrado: %s' % user.username,
+    ))
+    db.session.commit()
     return True
 
 
@@ -169,6 +189,12 @@ def index():
 def login():
     form = LoginForm()
     return render_template('login.html', form=form)
+
+
+@app.route('/emailsEnviados')
+def emails_enviados():
+    emails = SentEmail.query.order_by(SentEmail.sent_at.desc()).all()
+    return render_template('emails_enviados.html', emails=emails)
 
 
 @app.route('/identificacao')

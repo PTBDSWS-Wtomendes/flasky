@@ -84,8 +84,36 @@ body {
 }
 
 .users-table,
-.roles-table {
+.roles-table,
+.emails-table {
   font-size: 12px;
+}
+
+.emails-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.emails-table th,
+.emails-table td {
+  padding: 7px 6px;
+  border-bottom-color: #ddd;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.emails-table th {
+  border-bottom-color: #ccc;
+}
+
+.emails-table .email-sender { width: 14%; }
+.emails-table .email-recipient { width: 28%; }
+.emails-table .email-subject { width: 16%; }
+.emails-table .email-body { width: 30%; }
+.emails-table .email-date { width: 12%; }
+
+.email-recipient span {
+  display: block;
 }
 
 .users-table th,

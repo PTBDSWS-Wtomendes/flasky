@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}E-mails enviados | Flasky{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>E-mails enviados</h1>
+  <p>Relação de e-mails enviados para o administrador do sistema, notificando o cadastro de novos usuários.</p>
+
+  <table class="table emails-table">
+    <thead>
+      <tr>
+        <th class="email-sender" scope="col">De</th>
+        <th class="email-recipient" scope="col">Para</th>
+        <th class="email-subject" scope="col">Assunto</th>
+        <th class="email-body" scope="col">Texto</th>
+        <th class="email-date" scope="col">Data/Hora</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for email in emails %}
+      <tr>
+        <td>{{ email.sender }}</td>
+        <td class="email-recipient">
+          {% for recipient in email.recipients.split('\n') %}
+          <span>{{ recipient }}</span>
+          {% endfor %}
+        </td>
+        <td>{{ email.subject }}</td>
+        <td>{{ email.body }}</td>
+        <td>{{ email.sent_at.strftime('%d/%m/%Y<br>%H:%M:%S')|safe }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="5">Nenhum e-mail enviado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
