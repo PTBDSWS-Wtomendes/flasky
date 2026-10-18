@@ -1,5 +1,8 @@
 import os
+from dotenv import load_dotenv
+
 basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.env'))
 
 
 class Config:
@@ -15,9 +18,11 @@ class Config:
     FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    API_KEY = os.environ.get('API_KEY')
-    API_URL = os.environ.get('API_URL')
-    API_FROM = os.environ.get('API_FROM')
+    API_KEY = os.environ.get('MAILGUN_API_KEY') or os.environ.get('API_KEY')
+    API_URL = os.environ.get('MAILGUN_API_URL') or os.environ.get('API_URL')
+    API_FROM = os.environ.get('MAILGUN_FROM') or os.environ.get('API_FROM')
+    STUDENT_NAME = os.environ.get('STUDENT_NAME', 'Wellington Mendes')
+    STUDENT_PRONTUARIO = os.environ.get('STUDENT_PRONTUARIO', 'PT303772X')
 
     @staticmethod
     def init_app(app):
@@ -34,6 +39,7 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
         'sqlite://'
+    WTF_CSRF_ENABLED = False
 
 
 class ProductionConfig(Config):

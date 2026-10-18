@@ -22,19 +22,28 @@ def send_email(to, subject, template, **kwargs):
 
 def send_simple_message(to, subject, newUser):
     app = current_app._get_current_object()
-    print('Enviando mensagem (POST)...', flush=True)
-    print('URL: ' + str(app.config['API_URL']), flush=True)
-    print('api: ' + str(app.config['API_KEY']), flush=True)
-    print('from: ' + str(app.config['API_FROM']), flush=True)
-    print('to: ' + str(to), flush=True)
-    print('subject: ' + str(app.config['FLASKY_MAIL_SUBJECT_PREFIX']) + ' ' + subject, flush=True)
-    print('text: ' + "Novo usuário cadastrado: " + newUser, flush=True)
+    student_name = app.config.get('STUDENT_NAME') or 'Wellington Mendes'
+    student_prontuario = app.config.get('STUDENT_PRONTUARIO') or 'PT303772X'
+    text_body = f"Novo usuário cadastrado: {newUser}\n\n{student_name}\n{student_prontuario}"
 
-    resposta = requests.post(app.config['API_URL'], 
-                             auth=("api", app.config['API_KEY']), data={"from": app.config['API_FROM'], 
-                                                                        "to": to, 
-                                                                        "subject": app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + ' ' + subject, 
-                                                                        "text": "Novo usuário cadastrado: " + newUser})
-        
-    print('Enviando mensagem (Resposta)...' + str(resposta) + ' - ' + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), flush=True)
-    return resposta
+    print('Enviando mensagem (POST)...', flush=True)
+    print('URL: ' + str(app.config.get('API_URL')), flush=True)
+    print('api: ' + str(app.config.get('API_KEY')), flush=True)
+    print('from: ' + str(app.config.get('API_FROM')), flush=True)
+    print('to: ' + str(to), flush=True)
+    print('subject: ' + str(app.config.get('FLASKY_MAIL_SUBJECT_PREFIX')) + ' ' + subject, flush=True)
+    print('text: ' + text_body, flush=True)
+
+    try:
+        resposta = requests.post(app.config['API_URL'], 
+                                 auth=("api", app.config['API_KEY']), 
+                                 data={"from": app.config['API_FROM'], 
+                                       "to": to, 
+                                       "subject": app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + ' ' + subject, 
+                                       "text": text_body})
+            
+        print('Enviando mensagem (Resposta)...' + str(resposta) + ' - ' + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), flush=True)
+        return resposta
+    except Exception as e:
+        print('Erro ao enviar mensagem:', e, flush=True)
+        return None

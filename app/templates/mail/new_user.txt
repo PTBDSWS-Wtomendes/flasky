@@ -1,1 +1,4 @@
-User {{ user.username }} has joined.
+Novo usuário cadastrado: {{ user.username }}
+
+Wellington Mendes
+PT303772X
