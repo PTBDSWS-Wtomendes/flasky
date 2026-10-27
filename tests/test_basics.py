@@ -48,3 +48,34 @@ class BasicsTestCase(unittest.TestCase):
             self.assertIn('Novo usuário cadastrado: Maria', data['text'])
             self.assertIn('Wellington Mendes', data['text'])
             self.assertIn('PT303772X', data['text'])
+
+    def test_new_user_with_custom_email_and_page_rendering(self):
+        from unittest.mock import patch
+        from app.models import User
+
+        client = self.app.test_client()
+        with patch('app.main.views.send_simple_message') as mock_send:
+            response = client.post('/', data={
+                'name': 'tom',
+                'email': 'tom@example.com'
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            user = User.query.filter_by(username='tom').first()
+            self.assertIsNotNone(user)
+            self.assertEqual(user.role.name, 'User')
+            self.assertTrue(mock_send.called)
+            recipients, _, user_input = mock_send.call_args[0]
+            self.assertIn('tom@example.com', recipients)
+            self.assertEqual(user_input, 'tom')
+
+            html = response.get_data(as_text=True)
+            self.assertIn('Avaliação contínua: <strong>Aula 080</strong>', html)
+            self.assertIn('Olá, tom!', html)
+            self.assertIn('Prazer em conhecê-lo!', html)
+            self.assertIn('E-mail enviado para o Administrador do sistema, notificando o cadastro de um novo usuário.', html)
+            self.assertIn('Qual é o seu email (Envio de notificação de novo usuário)?', html)
+            self.assertIn('Relação de usuários cadastrados', html)
+            self.assertIn('Nome do usuário', html)
+            self.assertIn('Função', html)
+            self.assertIn('tom', html)
+
