@@ -18,9 +18,13 @@ class Config:
     FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    API_KEY = os.environ.get('MAILGUN_API_KEY') or os.environ.get('API_KEY')
-    API_URL = os.environ.get('MAILGUN_API_URL') or os.environ.get('API_URL')
-    API_FROM = os.environ.get('MAILGUN_FROM') or os.environ.get('API_FROM')
+    SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
+    SENDGRID_API_URL = os.environ.get('SENDGRID_API_URL', 'https://api.sendgrid.com/v3/mail/send')
+    SENDGRID_FROM = os.environ.get('SENDGRID_FROM')
+
+    API_KEY = os.environ.get('SENDGRID_API_KEY') or os.environ.get('API_KEY') or os.environ.get('MAILGUN_API_KEY')
+    API_URL = os.environ.get('SENDGRID_API_URL') or os.environ.get('API_URL') or os.environ.get('MAILGUN_API_URL') or 'https://api.sendgrid.com/v3/mail/send'
+    API_FROM = os.environ.get('SENDGRID_FROM') or os.environ.get('API_FROM') or os.environ.get('MAILGUN_FROM')
     STUDENT_NAME = os.environ.get('STUDENT_NAME', 'Wellington Mendes')
     STUDENT_PRONTUARIO = os.environ.get('STUDENT_PRONTUARIO', 'PT303772X')
 

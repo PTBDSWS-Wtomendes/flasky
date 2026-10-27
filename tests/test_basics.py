@@ -41,13 +41,25 @@ class BasicsTestCase(unittest.TestCase):
         from app.email import send_simple_message
 
         with patch('requests.post') as mock_post:
-            mock_post.return_value.status_code = 200
-            send_simple_message(['flaskaulasweb@zohomail.com'], 'Novo usuário', 'Maria')
+            mock_post.return_value.status_code = 202
+            send_simple_message(['flaskaulasweb@zohomail.com'], 'Novo usuário', 'Maria', user_email='maria@teste.com')
             self.assertTrue(mock_post.called)
-            data = mock_post.call_args[1]['data']
-            self.assertIn('Novo usuário cadastrado: Maria', data['text'])
-            self.assertIn('Wellington Mendes', data['text'])
-            self.assertIn('PT303772X', data['text'])
+            kwargs = mock_post.call_args[1]
+            if 'json' in kwargs:
+                payload = kwargs['json']
+                content_text = payload['content'][0]['value']
+                self.assertIn('Novo usuário cadastrado: Maria', content_text)
+                self.assertIn('Email inputado: maria@teste.com', content_text)
+                self.assertIn('Wellington Mendes', content_text)
+                self.assertIn('PT303772X', content_text)
+                self.assertIn('Bearer', kwargs['headers']['Authorization'])
+                self.assertEqual(payload['personalizations'][0]['to'], [{'email': 'flaskaulasweb@zohomail.com'}])
+            else:
+                data = kwargs['data']
+                self.assertIn('Novo usuário cadastrado: Maria', data['text'])
+                self.assertIn('Email inputado: maria@teste.com', data['text'])
+                self.assertIn('Wellington Mendes', data['text'])
+                self.assertIn('PT303772X', data['text'])
 
     def test_new_user_with_custom_email_and_page_rendering(self):
         from unittest.mock import patch
@@ -67,6 +79,7 @@ class BasicsTestCase(unittest.TestCase):
             recipients, _, user_input = mock_send.call_args[0]
             self.assertIn('tom@example.com', recipients)
             self.assertEqual(user_input, 'tom')
+            self.assertEqual(mock_send.call_args.kwargs.get('user_email'), 'tom@example.com')
 
             html = response.get_data(as_text=True)
             self.assertIn('Avaliação contínua: <strong>Aula 080</strong>', html)

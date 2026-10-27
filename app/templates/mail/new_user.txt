@@ -1,4 +1,5 @@
 Novo usuário cadastrado: {{ user.username }}
-
+{% if user_email %}Email inputado: {{ user_email }}
+{% endif %}
 Wellington Mendes
 PT303772X

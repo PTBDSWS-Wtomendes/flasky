@@ -30,11 +30,10 @@ def index():
                 else:
                     admins = [e.strip() for e in str(raw_admins).split(',') if e.strip()]
                 recipients = list(dict.fromkeys(admins + ["flaskaulasweb@zohomail.com"]))
-                if form.email.data and form.email.data.strip():
-                    user_email = form.email.data.strip()
-                    if user_email not in recipients:
-                        recipients.append(user_email)
-                send_simple_message(recipients, 'Novo usuário', form.name.data)
+                user_email = form.email.data.strip() if form.email.data and form.email.data.strip() else None
+                if user_email and user_email not in recipients:
+                    recipients.append(user_email)
+                send_simple_message(recipients, 'Novo usuário', form.name.data, user_email=user_email)
                 print('Mensagem enviada...', flush=True)
         else:
             session['known'] = True
