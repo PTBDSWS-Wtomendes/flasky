@@ -91,4 +91,59 @@ class BasicsTestCase(unittest.TestCase):
             self.assertIn('Nome do usuário', html)
             self.assertIn('Função', html)
             self.assertIn('tom', html)
+            self.assertIn('Editar', html)
+            self.assertIn('Excluir', html)
+            self.assertIn(f'/edit/{user.id}', html)
+            self.assertIn(f'/delete/{user.id}', html)
 
+    def test_edit_user(self):
+        from app.models import User, Role
+
+        user_role = Role.query.filter_by(name='User').first()
+        if not user_role:
+            user_role = Role(name='User')
+            db.session.add(user_role)
+        admin_role = Role.query.filter_by(name='Admin').first()
+        if not admin_role:
+            admin_role = Role(name='Admin')
+            db.session.add(admin_role)
+        user = User(username='Ciclano', role=user_role)
+        db.session.add(user)
+        db.session.commit()
+
+        client = self.app.test_client()
+        # Test GET edit
+        get_res = client.get(f'/edit/{user.id}')
+        self.assertEqual(get_res.status_code, 200)
+        self.assertIn('Edição de Usuário', get_res.get_data(as_text=True))
+        self.assertIn('Ciclano', get_res.get_data(as_text=True))
+
+        # Test POST edit
+        post_res = client.post(f'/edit/{user.id}', data={
+            'name': 'Ciclano Silva',
+            'role': 'Admin'
+        }, follow_redirects=True)
+        self.assertEqual(post_res.status_code, 200)
+
+        updated_user = db.session.get(User, user.id)
+        self.assertEqual(updated_user.username, 'Ciclano Silva')
+        self.assertEqual(updated_user.role.name, 'Admin')
+
+    def test_delete_user(self):
+        from app.models import User, Role
+
+        user_role = Role.query.filter_by(name='User').first()
+        if not user_role:
+            user_role = Role(name='User')
+            db.session.add(user_role)
+        user = User(username='ParaExcluir', role=user_role)
+        db.session.add(user)
+        db.session.commit()
+
+        user_id = user.id
+        client = self.app.test_client()
+        res = client.get(f'/delete/{user_id}', follow_redirects=True)
+        self.assertEqual(res.status_code, 200)
+
+        deleted = db.session.get(User, user_id)
+        self.assertIsNone(deleted)
