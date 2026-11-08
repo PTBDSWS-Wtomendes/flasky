@@ -1,92 +1,63 @@
-from threading import Thread
 from flask import current_app, render_template
 from flask_mail import Message
-from . import mail
 import requests
-from datetime import datetime
+from . import mail
 
 
-def send_async_email(app, to, subject, text_body, html_body):
-    with app.app_context():
-        _send(app, to, subject, text_body, html_body)
+def _recipients(to):
+    return [to] if isinstance(to, str) else list(to)
 
 
 def _send(app, to, subject, text_body, html_body):
+    """Deliver an email and return whether the provider accepted it."""
     prefix = app.config.get('FLASKY_MAIL_SUBJECT_PREFIX', '')
-    full_subject = f"{prefix} {subject}".strip() if prefix else subject
-    url = app.config.get('SENDGRID_API_URL') or app.config.get('API_URL') or 'https://api.sendgrid.com/v3/mail/send'
+    full_subject = f'{prefix} {subject}'.strip() if prefix else subject
     api_key = app.config.get('SENDGRID_API_KEY') or app.config.get('API_KEY')
-    api_from = app.config.get('SENDGRID_FROM') or app.config.get('API_FROM') or app.config.get('FLASKY_MAIL_SENDER', 'flaskaulas@zohomail.com')
+    api_from = (app.config.get('SENDGRID_FROM') or app.config.get('API_FROM') or
+                app.config.get('FLASKY_MAIL_SENDER'))
+    url = app.config.get('SENDGRID_API_URL') or app.config.get('API_URL')
 
-    is_sendgrid = (api_key and str(api_key).startswith('SG.')) or ('sendgrid.com' in str(url))
-
-    if is_sendgrid and api_key and api_from:
+    if api_key and api_from and url and 'sendgrid.com' in url:
+        payload = {
+            'personalizations': [{'to': [{'email': address} for address in _recipients(to)]}],
+            'from': {'email': api_from}, 'subject': full_subject,
+            'content': [item for item in (
+                {'type': 'text/plain', 'value': text_body} if text_body else None,
+                {'type': 'text/html', 'value': html_body} if html_body else None,
+            ) if item],
+        }
         try:
-            if isinstance(to, list):
-                to_list = [{"email": addr} for addr in to]
-            else:
-                to_list = [{"email": to}]
+            response = requests.post(
+                url, headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+                json=payload, timeout=10)
+            response.raise_for_status()
+            app.logger.info('Email accepted by SendGrid for %s.', ', '.join(_recipients(to)))
+            return True
+        except requests.RequestException:
+            app.logger.exception('SendGrid rejected or could not receive email for %s.', ', '.join(_recipients(to)))
+            return False
 
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            }
-            content_items = []
-            if text_body:
-                content_items.append({"type": "text/plain", "value": text_body})
-            if html_body:
-                content_items.append({"type": "text/html", "value": html_body})
-            if not content_items:
-                content_items.append({"type": "text/plain", "value": full_subject})
+    if app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'):
+        try:
+            message = Message(full_subject, sender=api_from, recipients=_recipients(to))
+            message.body, message.html = text_body, html_body
+            mail.send(message)
+            app.logger.info('Email accepted by SMTP for %s.', ', '.join(_recipients(to)))
+            return True
+        except Exception:
+            app.logger.exception('SMTP could not send email for %s.', ', '.join(_recipients(to)))
+            return False
 
-            payload = {
-                "personalizations": [{"to": to_list}],
-                "from": {"email": api_from},
-                "subject": full_subject,
-                "content": content_items
-            }
-            res = requests.post(url, headers=headers, json=payload)
-            print(f"Email sent via SendGrid to {to}: {res.status_code}", flush=True)
-            return res
-        except Exception as e:
-            print('Erro ao enviar mensagem via SendGrid:', e, flush=True)
-
-    # Fallback to Flask-Mail if configured
-    try:
-        msg = Message(full_subject, sender=api_from, recipients=[to] if isinstance(to, str) else to)
-        if text_body:
-            msg.body = text_body
-        if html_body:
-            msg.html = html_body
-        mail.send(msg)
-        print(f"Email sent via Flask-Mail to {to}", flush=True)
-    except Exception as e:
-        print('Erro ao enviar mensagem via Flask-Mail:', e, flush=True)
+    app.logger.error('Email was not sent: no email provider is configured.')
+    return False
 
 
 def send_email(to, subject, template, **kwargs):
     app = current_app._get_current_object()
 
-    text_body = None
-    html_body = None
-    try:
-        text_body = render_template(template + '.txt', **kwargs)
-    except Exception:
-        pass
-    try:
-        html_body = render_template(template + '.html', **kwargs)
-    except Exception:
-        pass
-    if not text_body and not html_body:
-        text_body = subject
-
-    if app.config.get('TESTING'):
-        _send(app, to, subject, text_body, html_body)
-        return None
-
-    thr = Thread(target=send_async_email, args=[app, to, subject, text_body, html_body])
-    thr.start()
-    return thr
+    text_body = render_template(template + '.txt', **kwargs)
+    html_body = render_template(template + '.html', **kwargs)
+    return _send(app, to, subject, text_body, html_body)
 
 
 def send_simple_message(to, subject, newUser, user_email=None):

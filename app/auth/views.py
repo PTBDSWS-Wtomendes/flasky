@@ -55,14 +55,17 @@ def register():
         db.session.add(user)
         db.session.commit()
         token = user.generate_confirmation_token()
-        send_email(
+        delivered = send_email(
             user.email,
             'Confirmação de Conta',
             'auth/email/confirm',
             user=user,
             token=token
         )
-        flash('A confirmation email has been sent to you by email.')
+        if delivered:
+            flash('A confirmation email has been sent to you by email.')
+        else:
+            flash('Your account was created, but we could not send the confirmation email. Please try again later.', 'error')
         confirm_url = url_for('auth.confirm', token=token, _external=True)
         flash(f'To confirm your account <a href="{confirm_url}">click here</a>')
         return redirect(url_for('auth.login'))
@@ -102,14 +105,17 @@ def confirm(token):
 @login_required
 def resend_confirmation():
     token = current_user.generate_confirmation_token()
-    send_email(
+    delivered = send_email(
         current_user.email,
         'Confirmação de Conta',
         'auth/email/confirm',
         user=current_user,
         token=token
     )
-    flash('A new confirmation email has been sent to you by email.')
+    if delivered:
+        flash('A new confirmation email has been sent to you by email.')
+    else:
+        flash('We could not send the confirmation email. Please try again later.', 'error')
     confirm_url = url_for('auth.confirm', token=token, _external=True)
     flash(f'To confirm your account <a href="{confirm_url}">click here</a>')
     return redirect(url_for('main.index'))
@@ -125,13 +131,16 @@ def change_password():
             db.session.add(current_user)
             db.session.commit()
             if current_user.email:
-                send_email(
+                delivered = send_email(
                     current_user.email,
                     'Confirmação: Senha Alterada',
                     'auth/email/password_changed',
                     user=current_user
                 )
-            flash('Your password has been updated.')
+            if current_user.email and not delivered:
+                flash('Your password was updated, but we could not send the notification email.', 'error')
+            else:
+                flash('Your password has been updated.')
             return redirect(url_for('main.index'))
         else:
             flash('Invalid password.')
@@ -147,14 +156,17 @@ def password_reset_request():
         user = User.query.filter_by(email=form.email.data.lower()).first()
         if user:
             token = user.generate_reset_token()
-            send_email(
+            delivered = send_email(
                 user.email,
                 'Redefinição de Senha',
                 'auth/email/reset_password',
                 user=user,
                 token=token
             )
-            flash('An email with instructions to reset your password has been sent to you.')
+            if delivered:
+                flash('An email with instructions to reset your password has been sent to you.')
+            else:
+                flash('We could not send the password reset email. Please try again later.', 'error')
             reset_url = url_for('auth.password_reset', token=token, _external=True)
             flash(f'To reset your password <a href="{reset_url}">click here</a>')
             return redirect(url_for('auth.login'))
@@ -171,13 +183,16 @@ def password_reset(token):
         user = User.reset_password(token, form.password.data)
         if user:
             if user.email:
-                send_email(
+                delivered = send_email(
                     user.email,
                     'Confirmação: Senha Alterada',
                     'auth/email/password_changed',
                     user=user
                 )
-            flash('Your password has been updated.')
+            if user.email and not delivered:
+                flash('Your password was updated, but we could not send the notification email.', 'error')
+            else:
+                flash('Your password has been updated.')
             return redirect(url_for('auth.login'))
         else:
             flash('The password reset link is invalid or has expired.')

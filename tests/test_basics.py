@@ -1,8 +1,10 @@
 import unittest
 from unittest.mock import patch
+import requests
 from flask import current_app
 from app import create_app, db
 from app.models import User, Role
+from app.email import _send
 
 
 class BasicsTestCase(unittest.TestCase):
@@ -49,12 +51,14 @@ class BasicsTestCase(unittest.TestCase):
     def test_registration_and_login(self):
         client = self.app.test_client()
         # Register user
-        reg_response = client.post('/auth/register', data={
-            'email': 'wtomendes@example.com',
-            'username': 'wtomendes',
-            'password': 'secretpassword',
-            'password2': 'secretpassword'
-        }, follow_redirects=True)
+        with patch('app.auth.views.send_email', return_value=True) as mock_send:
+            reg_response = client.post('/auth/register', data={
+                'email': 'wtomendes@example.com',
+                'username': 'wtomendes',
+                'password': 'secretpassword',
+                'password2': 'secretpassword'
+            }, follow_redirects=True)
+        self.assertTrue(mock_send.called)
         self.assertEqual(reg_response.status_code, 200)
         reg_html = reg_response.get_data(as_text=True)
         self.assertIn('A confirmation email has been sent to you by email.', reg_html)
@@ -177,3 +181,25 @@ class BasicsTestCase(unittest.TestCase):
 
             updated_user = User.query.filter_by(username='user3').first()
             self.assertEqual(updated_user.email, 'new@example.com')
+
+    @patch('app.email.requests.post')
+    def test_sendgrid_email_requires_a_success_response(self, mock_post):
+        response = mock_post.return_value
+        with patch.object(response, 'raise_for_status') as raise_for_status:
+            self.assertTrue(_send(
+                current_app, 'recipient@example.com', 'Subject', 'Text body', '<p>HTML body</p>'
+            ))
+
+        mock_post.assert_called_once()
+        raise_for_status.assert_called_once()
+        self.assertEqual(mock_post.call_args.kwargs['timeout'], 10)
+        self.assertEqual(
+            mock_post.call_args.kwargs['json']['personalizations'][0]['to'],
+            [{'email': 'recipient@example.com'}]
+        )
+
+    @patch('app.email.requests.post')
+    def test_sendgrid_email_returns_false_when_rejected(self, mock_post):
+        mock_post.return_value.raise_for_status.side_effect = requests.HTTPError('forbidden')
+        # A provider failure must not be reported as a delivered email.
+        self.assertFalse(_send(current_app, 'recipient@example.com', 'Subject', 'Text body', None))
