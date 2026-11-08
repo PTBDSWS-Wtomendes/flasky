@@ -53,6 +53,12 @@ def register():
         user.role = user_role
         db.session.add(user)
         db.session.commit()
+        send_email(
+            user.email,
+            'Confirmação de Cadastro',
+            'auth/email/welcome',
+            user=user
+        )
         flash('You can now log in.')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', form=form)

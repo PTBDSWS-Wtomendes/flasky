@@ -1,0 +1,11 @@
+Prezado(a) {{ user.username }},
+
+Esta é uma mensagem informativa referente à atividade prática da disciplina/aplicação Flasky.
+
+Seja bem-vindo(a)! O seu cadastro na plataforma foi realizado com sucesso com o e-mail {{ user.email }}.
+
+Você já pode realizar o login na aplicação utilizando o seu e-mail e a senha cadastrada.
+
+Atenciosamente,
+Administrador da Aplicação
+
