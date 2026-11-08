@@ -1,0 +1,10 @@
+<p>Prezado(a) {{ user.username }},</p>
+<p>Esta é uma mensagem informativa referente à atividade prática da disciplina/aplicação Flasky.</p>
+<p>Recebemos uma solicitação para atualização do endereço de e-mail da sua conta para este endereço.</p>
+<p>Para confirmar e validar este novo e-mail, clique no link abaixo:</p>
+<p><a href="{{ url_for('auth.change_email', token=token, _external=True) }}">Clique aqui para confirmar seu novo e-mail</a></p>
+<p>Caso prefira, copie e cole o seguinte endereço em seu navegador:</p>
+<p>{{ url_for('auth.change_email', token=token, _external=True) }}</p>
+<p>Se você não solicitou esta alteração, ignore esta mensagem informativa.</p>
+<br>
+<p>Atenciosamente,<br><strong>Administrador da Aplicação</strong></p>

@@ -1,0 +1,10 @@
+Prezado(a) {{ user.username }},
+
+Esta é uma mensagem informativa referente à atividade prática da disciplina/aplicação Flasky.
+
+Informamos que o endereço de e-mail associado à sua conta foi alterado com sucesso para {{ new_email }}.
+
+Se você não autorizou esta alteração, comunique imediatamente o administrador.
+
+Atenciosamente,
+Administrador da Aplicação

@@ -1,6 +1,8 @@
 import unittest
+from unittest.mock import patch
 from flask import current_app
 from app import create_app, db
+from app.models import User, Role
 
 
 class BasicsTestCase(unittest.TestCase):
@@ -21,129 +23,148 @@ class BasicsTestCase(unittest.TestCase):
     def test_app_is_testing(self):
         self.assertTrue(current_app.config['TESTING'])
 
-    def test_new_user_triggers_email(self):
-        from unittest.mock import patch
-        from app.models import User
-
+    def test_anonymous_home_page(self):
         client = self.app.test_client()
-        with patch('app.main.views.send_simple_message') as mock_send:
-            response = client.post('/', data={'name': 'Aluno Teste'}, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            user = User.query.filter_by(username='Aluno Teste').first()
-            self.assertIsNotNone(user)
-            self.assertTrue(mock_send.called)
-            recipients, subject, user_input = mock_send.call_args[0]
-            self.assertIn('flaskaulasweb@zohomail.com', recipients)
-            self.assertEqual(user_input, 'Aluno Teste')
+        response = client.get('/')
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('Flasky', html)
+        self.assertIn('Hello, Stranger!', html)
+        self.assertIn('Log In', html)
+        self.assertNotIn('Account', html)
 
-    def test_send_simple_message_format(self):
-        from unittest.mock import patch
-        from app.email import send_simple_message
+    def test_password_setter_and_verification(self):
+        u = User(password='cat')
+        self.assertTrue(u.password_hash is not None)
+        self.assertTrue(u.verify_password('cat'))
+        self.assertFalse(u.verify_password('dog'))
+        with self.assertRaises(AttributeError):
+            _ = u.password
 
-        with patch('requests.post') as mock_post:
-            mock_post.return_value.status_code = 202
-            send_simple_message(['flaskaulasweb@zohomail.com'], 'Novo usuário', 'Maria', user_email='maria@teste.com')
-            self.assertTrue(mock_post.called)
-            kwargs = mock_post.call_args[1]
-            if 'json' in kwargs:
-                payload = kwargs['json']
-                content_text = payload['content'][0]['value']
-                self.assertIn('Novo usuário cadastrado: Maria', content_text)
-                self.assertIn('Email inputado: maria@teste.com', content_text)
-                self.assertIn('Wellington Mendes', content_text)
-                self.assertIn('PT303772X', content_text)
-                self.assertIn('Bearer', kwargs['headers']['Authorization'])
-                self.assertEqual(payload['personalizations'][0]['to'], [{'email': 'flaskaulasweb@zohomail.com'}])
-            else:
-                data = kwargs['data']
-                self.assertIn('Novo usuário cadastrado: Maria', data['text'])
-                self.assertIn('Email inputado: maria@teste.com', data['text'])
-                self.assertIn('Wellington Mendes', data['text'])
-                self.assertIn('PT303772X', data['text'])
+    def test_password_salts_are_random(self):
+        u = User(password='cat')
+        u2 = User(password='cat')
+        self.assertTrue(u.password_hash != u2.password_hash)
 
-    def test_new_user_with_custom_email_and_page_rendering(self):
-        from unittest.mock import patch
-        from app.models import User
-
+    def test_registration_and_login(self):
         client = self.app.test_client()
-        with patch('app.main.views.send_simple_message') as mock_send:
-            response = client.post('/', data={
-                'name': 'tom',
-                'email': 'tom@example.com'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            user = User.query.filter_by(username='tom').first()
-            self.assertIsNotNone(user)
-            self.assertEqual(user.role.name, 'User')
-            self.assertTrue(mock_send.called)
-            recipients, _, user_input = mock_send.call_args[0]
-            self.assertIn('tom@example.com', recipients)
-            self.assertEqual(user_input, 'tom')
-            self.assertEqual(mock_send.call_args.kwargs.get('user_email'), 'tom@example.com')
-
-            html = response.get_data(as_text=True)
-            self.assertIn('Avaliação contínua: <strong>Aula 080</strong>', html)
-            self.assertIn('Olá, tom!', html)
-            self.assertIn('Prazer em conhecê-lo!', html)
-            self.assertIn('E-mail enviado para o Administrador do sistema, notificando o cadastro de um novo usuário.', html)
-            self.assertIn('Qual é o seu email (Envio de notificação de novo usuário)?', html)
-            self.assertIn('Relação de usuários cadastrados', html)
-            self.assertIn('Nome do usuário', html)
-            self.assertIn('Função', html)
-            self.assertIn('tom', html)
-            self.assertIn('Editar', html)
-            self.assertIn('Excluir', html)
-            self.assertIn(f'/edit/{user.id}', html)
-            self.assertIn(f'/delete/{user.id}', html)
-
-    def test_edit_user(self):
-        from app.models import User, Role
-
-        user_role = Role.query.filter_by(name='User').first()
-        if not user_role:
-            user_role = Role(name='User')
-            db.session.add(user_role)
-        admin_role = Role.query.filter_by(name='Admin').first()
-        if not admin_role:
-            admin_role = Role(name='Admin')
-            db.session.add(admin_role)
-        user = User(username='Ciclano', role=user_role)
-        db.session.add(user)
-        db.session.commit()
-
-        client = self.app.test_client()
-        # Test GET edit
-        get_res = client.get(f'/edit/{user.id}')
-        self.assertEqual(get_res.status_code, 200)
-        self.assertIn('Edição de Usuário', get_res.get_data(as_text=True))
-        self.assertIn('Ciclano', get_res.get_data(as_text=True))
-
-        # Test POST edit
-        post_res = client.post(f'/edit/{user.id}', data={
-            'name': 'Ciclano Silva',
-            'role': 'Admin'
+        # Register user
+        reg_response = client.post('/auth/register', data={
+            'email': 'wtomendes@example.com',
+            'username': 'wtomendes',
+            'password': 'secretpassword',
+            'password2': 'secretpassword'
         }, follow_redirects=True)
-        self.assertEqual(post_res.status_code, 200)
+        self.assertEqual(reg_response.status_code, 200)
+        self.assertIn('You can now log in.', reg_response.get_data(as_text=True))
 
-        updated_user = db.session.get(User, user.id)
-        self.assertEqual(updated_user.username, 'Ciclano Silva')
-        self.assertEqual(updated_user.role.name, 'Admin')
+        user = User.query.filter_by(email='wtomendes@example.com').first()
+        self.assertIsNotNone(user)
+        self.assertEqual(user.username, 'wtomendes')
 
-    def test_delete_user(self):
-        from app.models import User, Role
+        # Log in
+        login_response = client.post('/auth/login', data={
+            'email': 'wtomendes@example.com',
+            'password': 'secretpassword'
+        }, follow_redirects=True)
+        self.assertEqual(login_response.status_code, 200)
+        login_html = login_response.get_data(as_text=True)
+        self.assertIn('Hello, wtomendes!', login_html)
+        self.assertIn('Account', login_html)
+        self.assertIn('Change Password', login_html)
+        self.assertIn('Change Email', login_html)
+        self.assertIn('Log Out', login_html)
 
-        user_role = Role.query.filter_by(name='User').first()
-        if not user_role:
-            user_role = Role(name='User')
-            db.session.add(user_role)
-        user = User(username='ParaExcluir', role=user_role)
+        # Log out
+        logout_response = client.get('/auth/logout', follow_redirects=True)
+        self.assertEqual(logout_response.status_code, 200)
+        logout_html = logout_response.get_data(as_text=True)
+        self.assertIn('Hello, Stranger!', logout_html)
+        self.assertIn('You have been logged out.', logout_html)
+
+    def test_password_reset_flow(self):
+        user = User(email='user@example.com', username='testuser', password='oldpassword')
         db.session.add(user)
         db.session.commit()
 
-        user_id = user.id
         client = self.app.test_client()
-        res = client.get(f'/delete/{user_id}', follow_redirects=True)
-        self.assertEqual(res.status_code, 200)
+        with patch('app.auth.views.send_email') as mock_send:
+            # Request password reset
+            req_res = client.post('/auth/reset', data={
+                'email': 'user@example.com'
+            }, follow_redirects=True)
+            self.assertEqual(req_res.status_code, 200)
+            req_html = req_res.get_data(as_text=True)
+            self.assertIn('An email with instructions to reset your password has been sent to you.', req_html)
+            self.assertIn('To reset your password', req_html)
+            self.assertTrue(mock_send.called)
 
-        deleted = db.session.get(User, user_id)
-        self.assertIsNone(deleted)
+            token = mock_send.call_args.kwargs['token']
+            self.assertIsNotNone(token)
+
+            # Perform reset
+            reset_res = client.post(f'/auth/reset/{token}', data={
+                'password': 'newsecretpassword',
+                'password2': 'newsecretpassword'
+            }, follow_redirects=True)
+            self.assertEqual(reset_res.status_code, 200)
+            self.assertIn('Your password has been updated.', reset_res.get_data(as_text=True))
+
+            # Verify password was updated
+            updated_user = User.query.filter_by(email='user@example.com').first()
+            self.assertTrue(updated_user.verify_password('newsecretpassword'))
+
+    def test_change_password_flow(self):
+        user = User(email='user2@example.com', username='user2', password='firstpassword')
+        db.session.add(user)
+        db.session.commit()
+
+        client = self.app.test_client()
+        # Log in
+        client.post('/auth/login', data={
+            'email': 'user2@example.com',
+            'password': 'firstpassword'
+        }, follow_redirects=True)
+
+        with patch('app.auth.views.send_email') as mock_send:
+            res = client.post('/auth/change-password', data={
+                'old_password': 'firstpassword',
+                'password': 'secondpassword',
+                'password2': 'secondpassword'
+            }, follow_redirects=True)
+            self.assertEqual(res.status_code, 200)
+            self.assertIn('Your password has been updated.', res.get_data(as_text=True))
+            self.assertTrue(mock_send.called)
+            self.assertEqual(mock_send.call_args[0][0], 'user2@example.com')
+
+            updated_user = User.query.filter_by(email='user2@example.com').first()
+            self.assertTrue(updated_user.verify_password('secondpassword'))
+
+    def test_change_email_flow(self):
+        user = User(email='old@example.com', username='user3', password='password123')
+        db.session.add(user)
+        db.session.commit()
+
+        client = self.app.test_client()
+        client.post('/auth/login', data={
+            'email': 'old@example.com',
+            'password': 'password123'
+        }, follow_redirects=True)
+
+        with patch('app.auth.views.send_email') as mock_send:
+            res = client.post('/auth/change_email', data={
+                'email': 'new@example.com',
+                'password': 'password123'
+            }, follow_redirects=True)
+            self.assertEqual(res.status_code, 200)
+            self.assertIn('An email with instructions to confirm your new email address has been sent to you.', res.get_data(as_text=True))
+            self.assertTrue(mock_send.called)
+            token = mock_send.call_args.kwargs['token']
+
+            # Confirm email change
+            confirm_res = client.get(f'/auth/change_email/{token}', follow_redirects=True)
+            self.assertEqual(confirm_res.status_code, 200)
+            self.assertIn('Your email address has been updated.', confirm_res.get_data(as_text=True))
+
+            updated_user = User.query.filter_by(username='user3').first()
+            self.assertEqual(updated_user.email, 'new@example.com')
