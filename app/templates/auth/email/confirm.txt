@@ -1,10 +1,9 @@
-Prezado(a) {{ user.username }},
+Olá, {{ user.username }}.
 
-Esta é uma mensagem informativa referente à atividade prática da disciplina/aplicação Flasky.
+Recebemos seu cadastro no Flasky. Para ativar sua conta, confirme seu endereço de e-mail:
 
-Seja bem-vindo(a)! Para confirmar e ativar a sua conta, por favor utilize o link abaixo:
+{{ public_url('auth.confirm', token=token) }}
 
-{{ url_for('auth.confirm', token=token, _external=True) }}
+Se você não criou uma conta no Flasky, pode ignorar esta mensagem.
 
-Atenciosamente,
-Administrador da Aplicação
+Equipe Flasky

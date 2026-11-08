@@ -21,6 +21,8 @@ class Config:
     SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
     SENDGRID_API_URL = os.environ.get('SENDGRID_API_URL', 'https://api.sendgrid.com/v3/mail/send')
     SENDGRID_FROM = os.environ.get('SENDGRID_FROM')
+    SENDGRID_FROM_NAME = os.environ.get('SENDGRID_FROM_NAME', 'Flasky')
+    APP_BASE_URL = os.environ.get('APP_BASE_URL')
 
     API_KEY = os.environ.get('SENDGRID_API_KEY') or os.environ.get('API_KEY') or os.environ.get('MAILGUN_API_KEY')
     API_URL = os.environ.get('SENDGRID_API_URL') or os.environ.get('API_URL') or os.environ.get('MAILGUN_API_URL') or 'https://api.sendgrid.com/v3/mail/send'

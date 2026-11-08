@@ -1,8 +1,5 @@
-<p>Prezado(a) {{ user.username }},</p>
-<p>Esta é uma mensagem informativa referente à atividade prática da disciplina/aplicação Flasky.</p>
-<p>Seja bem-vindo(a)! Para confirmar e ativar a sua conta, por favor clique no link abaixo:</p>
-<p><a href="{{ url_for('auth.confirm', token=token, _external=True) }}">Clique aqui para confirmar sua conta</a></p>
-<p>Caso o link acima não funcione, copie e cole o seguinte endereço em seu navegador:</p>
-<p>{{ url_for('auth.confirm', token=token, _external=True) }}</p>
-<br>
-<p>Atenciosamente,<br><strong>Administrador da Aplicação</strong></p>
+<p>Olá, {{ user.username }}.</p>
+<p>Recebemos seu cadastro no Flasky. Para ativar sua conta, confirme seu endereço de e-mail:</p>
+<p><a href="{{ public_url('auth.confirm', token=token) }}">Confirmar meu e-mail</a></p>
+<p>Se você não criou uma conta no Flasky, pode ignorar esta mensagem.</p>
+<p>Equipe Flasky</p>
