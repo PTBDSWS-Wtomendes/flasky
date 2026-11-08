@@ -1,5 +1,6 @@
-from flask import render_template, redirect, request, url_for, flash
+from flask import render_template, redirect, request, url_for, flash, current_app
 from flask_login import login_user, logout_user, login_required, current_user
+from itsdangerous import URLSafeTimedSerializer
 from . import auth
 from .. import db
 from ..models import User, Role
@@ -53,15 +54,65 @@ def register():
         user.role = user_role
         db.session.add(user)
         db.session.commit()
+        token = user.generate_confirmation_token()
         send_email(
             user.email,
-            'Confirmação de Cadastro',
-            'auth/email/welcome',
-            user=user
+            'Confirmação de Conta',
+            'auth/email/confirm',
+            user=user,
+            token=token
         )
-        flash('You can now log in.')
+        flash('A confirmation email has been sent to you by email.')
+        confirm_url = url_for('auth.confirm', token=token, _external=True)
+        flash(f'To confirm your account <a href="{confirm_url}">click here</a>')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', form=form)
+
+
+@auth.route('/confirm/<token>')
+def confirm(token):
+    if current_user.is_authenticated:
+        if current_user.confirmed:
+            return redirect(url_for('main.index'))
+        if current_user.confirm(token):
+            flash('You have confirmed your account. Thanks!')
+        else:
+            flash('The confirmation link is invalid or has expired.')
+        return redirect(url_for('main.index'))
+
+    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        data = s.loads(token, max_age=3600)
+    except Exception:
+        flash('The confirmation link is invalid or has expired.')
+        return redirect(url_for('auth.login'))
+
+    user = db.session.get(User, data.get('confirm'))
+    if user is not None:
+        user.confirmed = True
+        db.session.add(user)
+        db.session.commit()
+        flash('You have confirmed your account. Thanks!')
+    else:
+        flash('The confirmation link is invalid or has expired.')
+    return redirect(url_for('auth.login'))
+
+
+@auth.route('/confirm')
+@login_required
+def resend_confirmation():
+    token = current_user.generate_confirmation_token()
+    send_email(
+        current_user.email,
+        'Confirmação de Conta',
+        'auth/email/confirm',
+        user=current_user,
+        token=token
+    )
+    flash('A new confirmation email has been sent to you by email.')
+    confirm_url = url_for('auth.confirm', token=token, _external=True)
+    flash(f'To confirm your account <a href="{confirm_url}">click here</a>')
+    return redirect(url_for('main.index'))
 
 
 @auth.route('/change-password', methods=['GET', 'POST'])

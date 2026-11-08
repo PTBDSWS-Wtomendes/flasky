@@ -56,11 +56,20 @@ class BasicsTestCase(unittest.TestCase):
             'password2': 'secretpassword'
         }, follow_redirects=True)
         self.assertEqual(reg_response.status_code, 200)
-        self.assertIn('You can now log in.', reg_response.get_data(as_text=True))
+        reg_html = reg_response.get_data(as_text=True)
+        self.assertIn('A confirmation email has been sent to you by email.', reg_html)
+        self.assertIn('To confirm your account', reg_html)
 
         user = User.query.filter_by(email='wtomendes@example.com').first()
         self.assertIsNotNone(user)
         self.assertEqual(user.username, 'wtomendes')
+        self.assertFalse(user.confirmed)
+
+        token = user.generate_confirmation_token()
+        confirm_res = client.get(f'/auth/confirm/{token}', follow_redirects=True)
+        self.assertEqual(confirm_res.status_code, 200)
+        self.assertIn('You have confirmed your account. Thanks!', confirm_res.get_data(as_text=True))
+        self.assertTrue(user.confirmed)
 
         # Log in
         login_response = client.post('/auth/login', data={

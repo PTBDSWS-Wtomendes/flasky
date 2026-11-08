@@ -2,10 +2,9 @@ Prezado(a) {{ user.username }},
 
 Esta é uma mensagem informativa referente à atividade prática da disciplina/aplicação Flasky.
 
-Seja bem-vindo(a)! O seu cadastro na plataforma foi realizado com sucesso com o e-mail {{ user.email }}.
+Seja bem-vindo(a)! Para confirmar e ativar a sua conta, por favor utilize o link abaixo:
 
-Você já pode realizar o login na aplicação utilizando o seu e-mail e a senha cadastrada.
+{{ url_for('auth.confirm', token=token, _external=True) }}
 
 Atenciosamente,
 Administrador da Aplicação
-

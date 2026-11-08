@@ -43,6 +43,23 @@ class User(UserMixin, db.Model):
             return False
         return check_password_hash(self.password_hash, password)
 
+    def generate_confirmation_token(self):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        return s.dumps({'confirm': self.id})
+
+    def confirm(self, token):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token, max_age=3600)
+        except Exception:
+            return False
+        if data.get('confirm') != self.id:
+            return False
+        self.confirmed = True
+        db.session.add(self)
+        db.session.commit()
+        return True
+
     def generate_reset_token(self):
         s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         return s.dumps({'reset': self.id})
