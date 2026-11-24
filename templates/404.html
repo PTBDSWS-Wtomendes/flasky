@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}404 | Flasky{% endblock %}
+{% block title %}404 | Avaliação semestral{% endblock %}
 
 {% block content %}
-<section class="info-card mx-auto error-card">
-  <p class="section-label">Erro</p>
-  <h1 class="display-title">Página não encontrada</h1>
-  <p class="lead muted-copy">A rota solicitada não existe nesta aplicação.</p>
-</section>
+<div class="page-heading">
+  <h1>Página não encontrada</h1>
+  <hr>
+  <p>A rota solicitada não existe nesta aplicação.</p>
+  <p><a href="{{ url_for('index') }}">Voltar para a página inicial</a></p>
+</div>
 {% endblock %}

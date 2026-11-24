@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Não disponível | Avaliação semestral{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Não disponível</h1>
+  <hr>
+  <p>A data e hora local é {{ moment(current_time).format('LLL') }}.</p>
+</div>
+{% endblock %}

@@ -1,15 +1,12 @@
 :root {
   --page-bg: #ffffff;
   --ink: #333333;
-  --nav-bg: #181818;
+  --nav-bg: #222222;
+  --nav-link: #9d9d9d;
 }
 
 * {
   box-sizing: border-box;
-}
-
-.container {
-  max-width: 916px;
 }
 
 body {
@@ -18,152 +15,222 @@ body {
   color: var(--ink);
   background: var(--page-bg);
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.42857143;
+}
+
+.container {
+  max-width: 1000px;
 }
 
 .app-navbar {
-  background: #1f1f1f;
-  border-bottom: 1px solid #2f2f2f;
-  min-height: 40px;
+  background-color: var(--nav-bg);
+  border-bottom: 1px solid #080808;
+  min-height: 50px;
   padding: 0;
 }
 
-.app-navbar .container { min-height: 40px; }
-.navbar-brand, .nav-link { padding-top: 10px; padding-bottom: 10px; font-size: 12px; }
-.navbar-brand { color: #888; }
-
-.navbar-brand,
-.nav-link {
-  letter-spacing: 0.01em;
+.app-navbar .container {
+  min-height: 50px;
 }
 
-.nav-link {
-  color: rgba(255, 255, 255, 0.82);
+.app-navbar .navbar-brand {
+  color: var(--nav-link);
+  font-size: 18px;
+  line-height: 20px;
+  padding: 15px 15px 15px 0;
+  margin-right: 10px;
 }
 
-.nav-link:hover,
-.nav-link:focus,
-.nav-link.active {
+.app-navbar .navbar-brand:hover,
+.app-navbar .navbar-brand:focus {
+  color: #ffffff;
+}
+
+.app-navbar .nav-link {
+  color: var(--nav-link);
+  font-size: 13px;
+  line-height: 20px;
+  padding: 15px 12px;
+}
+
+.app-navbar .nav-link:hover,
+.app-navbar .nav-link:focus,
+.app-navbar .nav-link.active {
   color: #ffffff;
 }
 
 .page-shell {
-  padding: 2.25rem 0 3rem;
-}
-
-.page-container {
-  padding-top: 0;
+  padding: 1.5rem 0 3rem;
 }
 
 .page-heading {
   max-width: 100%;
-  padding-top: 0.5rem;
 }
 
 .page-heading h1 {
-  font-size: 2rem;
-  font-weight: 400;
-  margin-bottom: 0.75rem;
+  font-size: 32px;
+  font-weight: 500;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.page-heading h2 {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 20px 0 10px;
 }
 
 .page-heading p {
-  font-size: 0.95rem;
-  margin-bottom: 0.85rem;
+  font-size: 13px;
+  margin-bottom: 0.75rem;
 }
 
-.table {
+.page-heading hr {
+  margin: 18px 0;
+  border: 0;
+  border-top: 1px solid #eeeeee;
+  opacity: 1;
+}
+
+.disciplina-form,
+.cadastro-form {
   margin-top: 0.25rem;
 }
 
-.table th {
-  width: 160px;
+.disciplina-form .form-group,
+.cadastro-form .form-group {
+  margin-bottom: 15px;
 }
 
-.table td,
-.table th {
+.disciplina-form .form-label,
+.cadastro-form .form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.disciplina-form .form-control,
+.cadastro-form .form-control,
+.cadastro-form .form-select {
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  height: 34px;
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.42857143;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+}
+
+.cadastro-form .form-select {
+  padding-right: 2.25rem;
+}
+
+.cadastro-form .form-textarea {
+  height: auto;
+  min-height: 54px;
+  resize: vertical;
+}
+
+.semester-options {
+  margin-bottom: 12px;
+}
+
+.semester-options .form-check {
+  margin-bottom: 4px;
+  padding-left: 1.35em;
+}
+
+.semester-options .form-check-input {
+  margin-top: 0.25em;
+  cursor: pointer;
+}
+
+.semester-options .form-check-label {
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.form-error {
+  color: #a94442;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.btn-default {
+  color: #333333;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.42857143;
+  padding: 6px 12px;
+}
+
+.btn-default:hover,
+.btn-default:focus {
+  color: #333333;
+  background-color: #e6e6e6;
+  border-color: #adadad;
+}
+
+.disciplinas-table,
+.cadastro-table,
+.cursos-table {
+  width: 100%;
+  margin-top: 8px;
+  font-size: 13px;
+  table-layout: fixed;
+}
+
+.disciplinas-table thead th,
+.cadastro-table thead th,
+.cursos-table thead th {
+  padding: 8px;
+  border-bottom: 2px solid #dddddd;
+  font-weight: 700;
+}
+
+.disciplinas-table tbody td,
+.cadastro-table tbody td,
+.cursos-table tbody td {
+  padding: 8px;
+  border-bottom: 1px solid #dddddd;
+}
+
+.disciplinas-table thead th,
+.disciplinas-table tbody td,
+.cadastro-table thead th,
+.cadastro-table tbody td {
+  width: 50%;
   vertical-align: middle;
 }
 
-.users-table,
-.roles-table,
-.emails-table {
-  font-size: 12px;
+.cursos-table thead th:first-child,
+.cursos-table tbody td:first-child {
+  width: 22%;
 }
 
-.emails-table {
-  table-layout: fixed;
-  width: 100%;
+.cursos-table thead th:last-child,
+.cursos-table tbody td:last-child {
+  width: 78%;
 }
 
-.emails-table th,
-.emails-table td {
-  padding: 7px 6px;
-  border-bottom-color: #ddd;
+.cursos-table tbody td {
   vertical-align: top;
-  overflow-wrap: anywhere;
 }
 
-.emails-table th {
-  border-bottom-color: #ccc;
+.cursos-table .curso-nome {
+  font-weight: 700;
 }
 
-.emails-table .email-sender { width: 14%; }
-.emails-table .email-recipient { width: 28%; }
-.emails-table .email-subject { width: 16%; }
-.emails-table .email-body { width: 30%; }
-.emails-table .email-date { width: 12%; }
-
-.email-recipient span {
-  display: block;
-}
-
-.users-table th,
-.roles-table th {
-  border-bottom-color: #ccc;
-}
-
-.users-table td,
-.users-table th,
-.roles-table td,
-.roles-table th {
-  border-bottom-color: #ddd;
-  padding: 7px 6px;
-}
-
-.roles-table ol {
-  margin: 0;
-  padding-left: 25px;
-}
-
-@media (max-width: 767px) {
-  .page-shell {
-    padding-top: 0.5rem;
+@media (max-width: 991px) {
+  .app-navbar .navbar-brand {
+    padding: 12px 0;
   }
 
-  .page-heading h1 {
-    font-size: 1.75rem;
-  }
-
-  .table th {
-    width: 120px;
+  .app-navbar .nav-link {
+    padding: 8px 0;
   }
 }
-
-.page-heading p { font-size: 12px; margin-bottom: 0.85rem; }
-.page-heading hr { margin: 1rem 0; border: 0; border-top: 1px solid #eee; opacity: 1; }
-.request-context { font-size: 14px; margin-top: 1.75rem; }
-.request-context p { font-size: 14px; margin-bottom: 0.35rem; }
-.home-form { margin-top: 1rem; }
-.form-group { margin-bottom: 1rem; }
-.form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 0.35rem; }
-.form-control { border: 1px solid #ccc; border-radius: 4px; height: 28px; min-height: 28px; padding: 4px 10px; font-size: 12px; line-height: 18px; }
-.home-form .form-control { width: 100%; }
-.optional-email { margin: 0 0 0.55rem; font-size: 12px; }
-.optional-email .form-check-input { margin-top: 0.15rem; }
-.optional-email .form-check-label { cursor: pointer; }
-.page-heading h2 { font-size: 24px; font-weight: 400; margin: 0.75rem 0 0.4rem; }
-.home-form .btn { font-size: 12px; line-height: 18px; padding: 4px 10px; }
-.btn-primary { background: #337ab7; border-color: #2e6da4; font-size: 12px; padding: 5px 10px; }
-.time-line { font-size: 12px !important; margin: 1rem 0 0 !important; }
-.login-panel { width: 240px; margin: -1rem auto 0; padding: 30px 23px 22px; border: 1px solid #eee; border-radius: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
-.login-panel h1 { font-size: 24px; font-weight: 400; margin: 0 0 8px; }
-.login-panel .form-control { margin-bottom: 11px; }

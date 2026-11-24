@@ -1,263 +1,295 @@
 import os
+from datetime import datetime, timezone
 
-import requests
-from dotenv import load_dotenv
-from flask import Flask, abort, flash, make_response, redirect, render_template, request, session, url_for
-from flask_moment import Moment
-from flask_wtf import FlaskForm
-from wtforms import BooleanField, PasswordField, StringField, SubmitField
-from wtforms.validators import DataRequired
-from datetime import datetime, timedelta
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, flash, redirect, render_template, url_for
 from flask_migrate import Migrate
-
+from flask_moment import Moment
+from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import FlaskForm
+from wtforms import RadioField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired, Length
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(basedir, '.env'))
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'chave-forte-altere-em-producao'
-app.config['SQLALCHEMY_DATABASE_URI'] = \
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'chave-forte-altere-em-producao')
+app.config['SQLALCHEMY_DATABASE_URI'] = (
     'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
-app.config['MAILGUN_API_KEY'] = os.environ.get('MAILGUN_API_KEY', os.environ.get('API_KEY'))
-app.config['MAILGUN_API_URL'] = os.environ.get('MAILGUN_API_URL', os.environ.get('API_URL'))
-app.config['MAILGUN_FROM'] = os.environ.get(
-    'MAILGUN_FROM', os.environ.get('API_FROM', 'mendes.cunha@aluno.ifsp.edu.br')
-)
-app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky] '
-app.config['FLASKY_ADMIN'] = 'mendes.cunha@aluno.ifsp.edu.br'
-app.config['FLASKY_OPTIONAL_ADMIN'] = os.environ.get(
-    'FLASKY_OPTIONAL_ADMIN', 'flaskaulasweb@zohomail.com'
-)
 
 moment = Moment(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 application = app
 
+SEMESTRE_CHOICES = [
+    ('1º semestre', '1º semestre'),
+    ('2º semestre', '2º semestre'),
+    ('3º semestre', '3º semestre'),
+    ('4º semestre', '4º semestre'),
+    ('5º semestre', '5º semestre'),
+    ('6º semestre', '6º semestre'),
+]
 
-class Role(db.Model):
-    __tablename__ = 'roles'
+
+class Disciplina(db.Model):
+    __tablename__ = 'disciplinas'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True)
-    users = db.relationship('User', backref='role', lazy='dynamic')
+    nome = db.Column(db.String(64), unique=True, nullable=False)
+    semestre = db.Column(db.String(32), nullable=False)
+    professores = db.relationship('Professor', backref='disciplina', lazy='dynamic')
+    alunos = db.relationship('Aluno', backref='disciplina', lazy='dynamic')
 
     def __repr__(self):
-        return '<Role %r>' % self.name
+        return f'<Disciplina {self.nome!r} ({self.semestre!r})>'
 
 
-class User(db.Model):
-    __tablename__ = 'users'
+class Professor(db.Model):
+    __tablename__ = 'professores'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, index=True)
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    nome = db.Column(db.String(120), nullable=False)
+    disciplina_id = db.Column(
+        db.Integer, db.ForeignKey('disciplinas.id'), nullable=False
+    )
 
     def __repr__(self):
-        return '<User %r>' % self.username
+        return f'<Professor {self.nome!r}>'
 
 
-class SentEmail(db.Model):
-    __tablename__ = 'sent_emails'
+class Aluno(db.Model):
+    __tablename__ = 'alunos'
     id = db.Column(db.Integer, primary_key=True)
-    sender = db.Column(db.String(255), nullable=False)
-    recipients = db.Column(db.Text, nullable=False)
-    subject = db.Column(db.String(255), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    sent_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    nome = db.Column(db.String(120), nullable=False)
+    disciplina_id = db.Column(
+        db.Integer, db.ForeignKey('disciplinas.id'), nullable=False
+    )
 
     def __repr__(self):
-        return '<SentEmail %r>' % self.subject
+        return f'<Aluno {self.nome!r}>'
+
+
+class Curso(db.Model):
+    __tablename__ = 'cursos'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(120), unique=True, nullable=False)
+    descricao = db.Column(db.String(250), nullable=False)
+
+    def __repr__(self):
+        return f'<Curso {self.nome!r}>'
 
 
 with app.app_context():
-    SentEmail.__table__.create(db.engine, checkfirst=True)
+    db.create_all()
 
 
 @app.shell_context_processor
 def make_shell_context():
-    return dict(db=db, User=User, Role=Role, SentEmail=SentEmail)
-
-
-class NameForm(FlaskForm):
-    name = StringField('Qual é o seu nome?', validators=[DataRequired()])
-    send_optional_email = BooleanField(
-        'Deseja enviar e-mail para flaskaulasweb@zohomail.com?'
+    return dict(
+        db=db,
+        Disciplina=Disciplina,
+        Professor=Professor,
+        Aluno=Aluno,
+        Curso=Curso,
     )
-    submit = SubmitField('Submit')
 
 
-class LoginForm(FlaskForm):
-    username = StringField('Usuário ou e-mail')
-    password = PasswordField('Informe a sua senha')
-    submit = SubmitField('Enviar')
-
-
-def send_new_user_email(user, send_optional_email=False):
-    recipients = [app.config['FLASKY_ADMIN']]
-    if send_optional_email:
-        recipients.append(app.config['FLASKY_OPTIONAL_ADMIN'])
-    api_key = app.config['MAILGUN_API_KEY']
-    api_url = app.config['MAILGUN_API_URL']
-    if not recipients or not api_key or not api_url:
-        return False
-
-    html = render_template(
-        'mail/new_user.html',
-        user=user,
-        student_name='Wellington Mendes',
-        registration='PT303772X',
-    )
-    response = requests.post(
-        api_url,
-        auth=('api', api_key),
-        data={
-            'from': app.config['MAILGUN_FROM'],
-            'to': recipients,
-            'subject': app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + 'User Cadastrado no Banco',
-            'html': html,
-        },
-        timeout=15,
-    )
-    response.raise_for_status()
+def _coerce_disciplina_id(value):
     try:
-        db.session.add(SentEmail(
-            sender=user.username,
-            recipients='\n'.join(recipients),
-            subject=app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + 'User Cadastrado no Banco',
-            body='Novo usuário cadastrado: %s' % user.username,
-        ))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        app.logger.exception('E-mail enviado, mas não foi possível registrar o histórico')
-    return True
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
 
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    form = NameForm()
-    role_order = {'Administrator': 0, 'Moderator': 1, 'User': 2}
-    roles = sorted(Role.query.all(), key=lambda role: role_order.get(role.name, 99))
-    existing_role_names = {role.name for role in roles}
-    missing_roles = [
-        Role(name=role_name)
-        for role_name in ('Administrator', 'Moderator', 'User')
-        if role_name not in existing_role_names
-    ]
-    if missing_roles:
-        db.session.add_all(missing_roles)
-        db.session.commit()
-        roles = sorted(Role.query.all(), key=lambda role: role_order.get(role.name, 99))
+class DisciplinaForm(FlaskForm):
+    nome = StringField(
+        'Cadastre a nova disciplina e o semestre associado:',
+        validators=[DataRequired(message='Informe o nome da disciplina.')],
+    )
+    semestre = RadioField(
+        'Semestre',
+        choices=SEMESTRE_CHOICES,
+        validators=[DataRequired(message='Selecione o semestre associado.')],
+    )
+    submit = SubmitField('Cadastrar')
+
+
+class ProfessorForm(FlaskForm):
+    nome = StringField(
+        'Cadastre o novo Professor:',
+        validators=[DataRequired(message='Informe o nome do professor.')],
+    )
+    disciplina_id = SelectField(
+        'Disciplina associada:',
+        coerce=_coerce_disciplina_id,
+        validators=[DataRequired(message='Selecione uma disciplina associada.')],
+    )
+    submit = SubmitField('Cadastrar')
+
+
+class AlunoForm(FlaskForm):
+    nome = StringField(
+        'Cadastre o novo Aluno:',
+        validators=[DataRequired(message='Informe o nome do aluno.')],
+    )
+    disciplina_id = SelectField(
+        'Disciplina associada:',
+        coerce=_coerce_disciplina_id,
+        validators=[DataRequired(message='Selecione uma disciplina associada.')],
+    )
+    submit = SubmitField('Cadastrar')
+
+
+class CursoForm(FlaskForm):
+    nome = StringField(
+        'Qual é o nome do curso?',
+        validators=[DataRequired(message='Informe o nome do curso.')],
+    )
+    descricao = TextAreaField(
+        'Descrição (250 caracteres)',
+        validators=[
+            DataRequired(message='Informe a descrição do curso.'),
+            Length(max=250, message='A descrição deve ter no máximo 250 caracteres.'),
+        ],
+    )
+    submit = SubmitField('Cadastrar')
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
+
+
+def _disciplina_choices():
+    disciplinas_list = Disciplina.query.order_by(Disciplina.id).all()
+    if not disciplinas_list:
+        return [(0, 'Nenhuma disciplina cadastrada')]
+    return [(d.id, d.nome) for d in disciplinas_list]
+
+
+def _handle_associado(model, form, endpoint, title, list_heading, col_label, empty_label):
+    choices = _disciplina_choices()
+    form.disciplina_id.choices = choices
+    has_disciplinas = choices[0][0] != 0
 
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.name.data).first()
-        if user is None:
-            selected_role = Role.query.filter_by(name='User').first()
-            user = User(username=form.name.data, role=selected_role)
-            db.session.add(user)
-            db.session.commit()
-            session['known'] = False
-            try:
-                if send_new_user_email(user, form.send_optional_email.data):
-                    flash('Cadastro salvo e e-mail enviado ao administrador.')
-                else:
-                    flash('Cadastro salvo. Configure FLASKY_ADMIN para enviar o e-mail.')
-            except requests.HTTPError as error:
-                response = error.response
-                app.logger.error(
-                    'Mailgun rejeitou o envio: status=%s resposta=%s',
-                    response.status_code if response else 'desconhecido',
-                    response.text if response else str(error),
-                )
-                flash('Cadastro salvo, mas o Mailgun rejeitou o envio. Consulte o log.')
-            except Exception:
-                app.logger.exception('Falha ao enviar o e-mail de novo usuário')
-                flash('Cadastro salvo, mas não foi possível enviar o e-mail.')
+        nome = form.nome.data.strip()
+        disciplina = db.session.get(Disciplina, form.disciplina_id.data)
+        if not nome:
+            flash('Informe um nome válido.', 'warning')
+        elif disciplina is None:
+            flash('Cadastre ao menos uma disciplina antes de continuar.', 'warning')
         else:
-            session['known'] = True
-        session.permanent = True
-        session['name'] = form.name.data
-        return redirect(url_for('index'))
+            db.session.add(model(nome=nome, disciplina=disciplina))
+            db.session.commit()
+            flash('Cadastro realizado com sucesso!', 'success')
+        return redirect(url_for(endpoint))
 
+    items = model.query.order_by(model.id).all()
+    return render_template(
+        'cadastro_associado.html',
+        title=title,
+        list_heading=list_heading,
+        col_label=col_label,
+        empty_label=empty_label,
+        form=form,
+        items=items,
+        has_disciplinas=has_disciplinas,
+    )
+
+
+@app.route('/')
+def index():
     return render_template(
         'index.html',
-        form=form,
-        name=session.get('name'),
-        known=session.get('known', False),
-        users=User.query.order_by(User.id).all(),
-        roles=Role.query.order_by(Role.id).all(),
-        role_count=Role.query.count(),
-        user_count=User.query.count(),
-    )
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    return render_template('login.html', form=form)
-
-
-@app.route('/emailsEnviados')
-def emails_enviados():
-    emails = SentEmail.query.order_by(SentEmail.sent_at.desc()).all()
-    return render_template('emails_enviados.html', emails=emails)
-
-
-@app.route('/identificacao')
-def identificacao():
-    return render_template(
-        'identificacao.html',
         student_name='Wellington Mendes',
         registration='PT303772X',
-        discipline='PTBDSWS',
+        current_time=utc_now(),
     )
 
 
-@app.route('/contexto')
-def contexto():
+@app.route('/disciplinas', methods=['GET', 'POST'])
+def disciplinas():
+    form = DisciplinaForm()
+    if form.validate_on_submit():
+        nome = form.nome.data.strip()
+        if not nome:
+            flash('Informe um nome válido para a disciplina.', 'warning')
+            return redirect(url_for('disciplinas'))
+
+        existing = Disciplina.query.filter_by(nome=nome).first()
+        if existing is not None:
+            flash('Disciplina já cadastrada.', 'warning')
+        else:
+            disciplina = Disciplina(nome=nome, semestre=form.semestre.data)
+            db.session.add(disciplina)
+            db.session.commit()
+            flash('Disciplina cadastrada com sucesso!', 'success')
+        return redirect(url_for('disciplinas'))
+
+    disciplinas_cadastradas = Disciplina.query.order_by(Disciplina.id).all()
     return render_template(
-        'contexto.html',
-        user_agent=request.headers.get('User-Agent'),
-        remote_ip=request.remote_addr,
-        host=request.host,
+        'disciplinas.html',
+        form=form,
+        disciplinas=disciplinas_cadastradas,
     )
 
 
-@app.route('/contextorequisicao')
-def contexto_requisicao_alias():
+@app.route('/professores', methods=['GET', 'POST'])
+def professores():
+    return _handle_associado(
+        model=Professor,
+        form=ProfessorForm(),
+        endpoint='professores',
+        title='Cadastro de Professores | Avaliação semestral',
+        list_heading='Relação de professores cadastrados',
+        col_label='Professor',
+        empty_label='Nenhum professor cadastrado.',
+    )
+
+
+@app.route('/alunos', methods=['GET', 'POST'])
+def alunos():
+    return _handle_associado(
+        model=Aluno,
+        form=AlunoForm(),
+        endpoint='alunos',
+        title='Cadastro de Alunos | Avaliação semestral',
+        list_heading='Relação de alunos cadastrados',
+        col_label='Aluno',
+        empty_label='Nenhum aluno cadastrado.',
+    )
+
+
+@app.route('/cursos', methods=['GET', 'POST'])
+def cursos():
+    form = CursoForm()
+    if form.validate_on_submit():
+        nome = form.nome.data.strip()
+        descricao = form.descricao.data.strip()
+        if not nome or not descricao:
+            flash('Preencha o nome e a descrição do curso.', 'warning')
+            return redirect(url_for('cursos'))
+
+        existing = Curso.query.filter_by(nome=nome).first()
+        if existing is not None:
+            flash('Curso já cadastrado.', 'warning')
+        else:
+            db.session.add(Curso(nome=nome, descricao=descricao))
+            db.session.commit()
+            flash('Curso cadastrado com sucesso!', 'success')
+        return redirect(url_for('cursos'))
+
+    cursos_cadastrados = Curso.query.order_by(Curso.id).all()
     return render_template(
-        'contexto.html',
-        user_agent=request.headers.get('User-Agent'),
-        remote_ip=request.remote_addr,
-        host=request.host,
+        'cursos.html',
+        form=form,
+        cursos=cursos_cadastrados,
     )
 
 
-@app.route('/codigostatusdiferente')
-def codigostatusdiferente():
-    return render_template('error_message.html', title='Bad request', message='Bad request'), 400
-
-
-@app.route('/objetoresposta', defaults={'name': None})
-@app.route('/objetoresposta/<name>')
-def objetoresposta(name):
-    if name is None:
-        name = request.args.get('name', 'desconhecido')
-    response = make_response('<h1>This document carries a cookie!</h1>')
-    response.set_cookie('usuario', name)
-    return response
-
-
-@app.route('/redirecionamento')
-def redirecionamento():
-    return redirect('https://ptb.ifsp.edu.br/')
-
-
-@app.route('/abortar')
-def abortar():
-    abort(404)
+@app.route('/ocorrencias')
+def ocorrencias():
+    return render_template('nao_disponivel.html', current_time=utc_now())
 
 
 @app.errorhandler(404)

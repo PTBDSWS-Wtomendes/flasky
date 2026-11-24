@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <form method="POST" class="cadastro-form" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.nome.label(class="form-label") }}
+      {{ form.nome(class="form-control") }}
+      {% for error in form.nome.errors %}
+      <div class="form-error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="form-group">
+      {{ form.disciplina_id.label(class="form-label") }}
+      {{ form.disciplina_id(class="form-select", disabled=(not has_disciplinas)) }}
+      {% for error in form.disciplina_id.errors %}
+      <div class="form-error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    {{ form.submit(class="btn btn-default", disabled=(not has_disciplinas)) }}
+  </form>
+
+  <h2>{{ list_heading }}</h2>
+  <table class="table cadastro-table">
+    <thead>
+      <tr>
+        <th scope="col">{{ col_label }}</th>
+        <th scope="col">Disciplina</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.nome }}</td>
+        <td>{{ item.disciplina.nome }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="2">{{ empty_label }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

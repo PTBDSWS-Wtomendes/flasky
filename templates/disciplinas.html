@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastro de Disciplinas | Avaliação semestral{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <form method="POST" class="disciplina-form" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.nome.label(class="form-label") }}
+      {{ form.nome(class="form-control") }}
+      {% for error in form.nome.errors %}
+      <div class="form-error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="semester-options">
+      {% for subfield in form.semestre %}
+      <div class="form-check">
+        {{ subfield(class="form-check-input") }}
+        {{ subfield.label(class="form-check-label") }}
+      </div>
+      {% endfor %}
+      {% for error in form.semestre.errors %}
+      <div class="form-error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    {{ form.submit(class="btn btn-default") }}
+  </form>
+
+  <h2>Relação de disciplinas cadastradas</h2>
+  <table class="table disciplinas-table">
+    <thead>
+      <tr>
+        <th scope="col">Disciplina</th>
+        <th scope="col">Semestre</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for disciplina in disciplinas %}
+      <tr>
+        <td>{{ disciplina.nome }}</td>
+        <td>{{ disciplina.semestre }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="2">Nenhuma disciplina cadastrada.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

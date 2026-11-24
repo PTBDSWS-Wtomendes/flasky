@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastro de Cursos | Avaliação semestral{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <form method="POST" class="cadastro-form" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.nome.label(class="form-label") }}
+      {{ form.nome(class="form-control") }}
+      {% for error in form.nome.errors %}
+      <div class="form-error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="form-group">
+      {{ form.descricao.label(class="form-label") }}
+      {{ form.descricao(class="form-control form-textarea", maxlength="250", rows="2") }}
+      {% for error in form.descricao.errors %}
+      <div class="form-error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    {{ form.submit(class="btn btn-default") }}
+  </form>
+
+  <h2>Relação de cursos cadastrados</h2>
+  <table class="table cursos-table">
+    <thead>
+      <tr>
+        <th scope="col">Curso</th>
+        <th scope="col">Descrição</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for curso in cursos %}
+      <tr>
+        <td class="curso-nome">{{ curso.nome }}</td>
+        <td>{{ curso.descricao }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="2">Nenhum curso cadastrado.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
